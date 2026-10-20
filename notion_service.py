@@ -446,21 +446,25 @@ def sync_todos_with_notion(local_todos):
         loc_id = loc.get("id", "")
         is_notion_uuid = len(loc_id) >= 32 and "-" in loc_id
 
-        if is_notion_uuid and loc_id in notion_map:
-            # Item exists in both: update Notion if local completion changed
-            remote = notion_map[loc_id]
-            loc_done = bool(loc.get("completed") or loc.get("done"))
-            rem_done = bool(remote.get("completed") or remote.get("done"))
+        if is_notion_uuid:
+            if loc_id in notion_map:
+                # Item exists in both: update Notion if local completion changed
+                remote = notion_map[loc_id]
+                loc_done = bool(loc.get("completed") or loc.get("done"))
+                rem_done = bool(remote.get("completed") or remote.get("done"))
 
-            if loc_done != rem_done:
-                try:
-                    update_notion_todo(loc_id, completed=loc_done)
-                    remote["completed"] = loc_done
-                    remote["done"] = loc_done
-                except Exception as e:
-                    print(f"[Notion Sync] Error updating {loc_id}:", e)
-            synced_list.append(remote)
-            del notion_map[loc_id]
+                if loc_done != rem_done:
+                    try:
+                        update_notion_todo(loc_id, completed=loc_done)
+                        remote["completed"] = loc_done
+                        remote["done"] = loc_done
+                    except Exception as e:
+                        print(f"[Notion Sync] Error updating {loc_id}:", e)
+                synced_list.append(remote)
+                del notion_map[loc_id]
+            else:
+                # Item was archived/deleted in Notion -> remove from local list cleanly
+                pass
         else:
             # Local item not in Notion yet -> create in Notion
             try:
