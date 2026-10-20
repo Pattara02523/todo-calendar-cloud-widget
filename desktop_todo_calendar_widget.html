@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desktop To-Do & Google Calendar Widget</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#4f46e5" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+      box-sizing: border-box;
+    }
+    body {
+      background: #0b0f19;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.75);
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.60);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.18s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.45);
+      background: rgba(30, 41, 59, 0.85);
+    }
+    .dock-simulation-right {
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: 8px;
+    }
+    .pulse-dot {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-slate-100 p-2 sm:p-3">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Sleek Top Header Bar -->
+  <header class="max-w-6xl mx-auto mb-2 glass-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2 shadow-lg">
+    <div class="flex items-center gap-2 min-w-0">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot shrink-0" title="สถานะ: ทำงานตลอดเวลา"></div>
+      <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+        <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white truncate">To-Do & Calendar</h1>
+        <span id="syncBadge" class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span id="syncStatusText">กำลังเชื่อมต่อ...</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Quick Compact Action Controls -->
+    <div class="flex items-center gap-1 shrink-0">
+      <button id="btnHeaderRefresh" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="ดึงข้อมูล Google Calendar สด">
+        <span id="headerRefreshIcon">🔄</span>
+        <span class="hidden sm:inline text-[11px]">รีเฟรช</span>
+      </button>
+      <button id="btnToggleLayout" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="สลับโหมดกะทัดรัด/ขยาย">
+        <span id="layoutIcon">📐</span>
+        <span class="hidden sm:inline text-[11px]" id="layoutLabel">ขยาย</span>
+      </button>
+      <button id="btnOpenSetupModal" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="ตั้งค่าทางลัด Desktop และ Startup">
+        <span>⚙️</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main id="widgetContainer" class="max-w-6xl mx-auto transition-all duration-300">
+
+    <!-- Clock & Date Banner Card (Always visible at top) -->
+    <section class="glass-panel rounded-2xl p-3 mb-2 shadow-lg flex flex-col gap-2">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <div id="liveTime" class="text-2xl sm:text-3xl font-bold tracking-tight text-white tabular-nums leading-none">00:00:00</div>
+          <div id="liveDate" class="text-xs text-indigo-300 font-medium mt-1">กำลังโหลดวันที่...</div>
+        </div>
+        <div class="text-right flex flex-col items-end">
+          <span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <span>⚡</span> Always on
+          </span>
+          <div class="text-[11px] text-slate-300 font-medium mt-1" id="todoProgressText">เสร็จแล้ว 0/0 งาน</div>
+        </div>
+      </div>
+      <!-- Progress Bar -->
+      <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+        <div id="todoProgressBar" class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </section>
+
+    <!-- Modern Segmented Tab Switcher (Fixes cramped layout on right-corner dock!) -->
+    <nav class="flex items-center p-1 bg-slate-900/95 rounded-2xl border border-slate-800/90 gap-1 mb-2 shadow-sm text-xs font-semibold">
+      <button id="tabBtnTodo" type="button" class="flex-1 py-1.5 px-2 rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-1.5 shadow-sm">
+        <span>✅</span>
+        <span>สิ่งที่ต้องทำ</span>
+        <span id="tabTodoCount" class="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-800/80 text-indigo-200">0</span>
+      </button>
+      <button id="tabBtnCalendar" type="button" class="flex-1 py-1.5 px-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center justify-center gap-1.5">
+        <span>📅</span>
+        <span>Google Calendar</span>
+        <span id="tabCalCount" class="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300">0</span>
+      </button>
+      <button id="tabBtnDual" type="button" class="py-1.5 px-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center justify-center gap-1" title="แสดง 2 ส่วนพร้อมกัน">
+        <span>🔀</span>
+        <span class="hidden sm:inline text-[11px]">มุมมองคู่</span>
+      </button>
+    </nav>
+
+    <!-- Content Grid (Supports Single View or Proportional Dual View) -->
+    <div id="widgetGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+
+      <!-- LEFT PANEL: To-Do List -->
+      <section id="todoSection" class="lg:col-span-5 glass-panel rounded-2xl p-3 sm:p-3.5 shadow-xl flex flex-col gap-2.5">
+        <!-- Notion Integration Bar -->
+        <div class="flex items-center justify-between px-1 text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-semibold text-white">📋 สิ่งที่ต้องทำ</span>
+            <button id="btnNotionBadge" type="button" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:border-indigo-400 transition flex items-center gap-1" title="ตรวจสอบสถานะการเชื่อมต่อ Notion">
+              <span id="notionStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <span id="notionStatusText">Notion</span>
+            </button>
+          </div>
+          <button id="btnNotionSyncNow" type="button" class="text-[11px] text-indigo-300 hover:text-white bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 px-2 py-0.5 rounded-lg transition flex items-center gap-1" title="ซิงก์กับ Notion ทันที">
+            <span id="notionSyncIcon">🔄</span>
+            <span class="hidden sm:inline">ซิงก์ Notion</span>
+          </button>
+        </div>
+
+        <!-- Add To-Do Form -->
+        <form id="todoForm" class="flex flex-col gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <div class="flex gap-1.5">
+            <input
+              id="todoInput"
+              type="text"
+              placeholder="พิมพ์งานใหม่ที่ต้องทำ..."
+              required
+              class="flex-1 bg-slate-800/90 text-slate-100 text-xs sm:text-sm rounded-lg px-3 py-2 border border-slate-700/80 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+            />
+            <button
+              type="submit"
+              class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shrink-0 shadow-sm"
+            >
+              + เพิ่ม
+            </button>
+          </div>
+          <!-- Compact metadata options -->
+          <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+            <input
+              id="todoDueDate"
+              type="date"
+              class="bg-slate-800/90 text-slate-200 text-xs rounded-lg px-2 py-1.5 border border-slate-700/80 focus:outline-none focus:border-indigo-500"
+            />
+            <select
+              id="todoPriority"
+              class="bg-slate-800/90 text-slate-200 text-xs rounded-lg px-2 py-1.5 border border-slate-700/80 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="high">🔴 สำคัญมาก</option>
+              <option value="medium" selected>🟡 ปานกลาง</option>
+              <option value="low">🟢 ทั่วไป</option>
+            </select>
+            <select
+              id="todoCategory"
+              class="bg-slate-800/90 text-slate-200 text-xs rounded-lg px-2 py-1.5 border border-slate-700/80 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="งานประจำ">💼 งานประจำ</option>
+              <option value="ประชุม">📅 ประชุม</option>
+              <option value="ส่วนตัว">🏠 ส่วนตัว</option>
+            </select>
+          </div>
+        </form>
+
+        <!-- Filter Pills & Clear -->
+        <div class="flex items-center justify-between gap-1 text-xs">
+          <div class="flex gap-1 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800">
+            <button type="button" data-filter="all" class="todo-filter-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-medium transition">ทั้งหมด</button>
+            <button type="button" data-filter="active" class="todo-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">ค้างอยู่</button>
+            <button type="button" data-filter="done" class="todo-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">เสร็จแล้ว</button>
+          </div>
+          <button id="btnClearCompleted" type="button" class="text-[11px] text-slate-400 hover:text-rose-400 transition px-2 py-1">
+            ล้างงานเสร็จ
+          </button>
+        </div>
+
+        <!-- To-Do Items List Container -->
+        <div id="todoListContainer" class="flex flex-col gap-2 max-h-[480px] overflow-y-auto pr-1"></div>
+      </section>
+
+      <!-- RIGHT PANEL: 1-Week Google Calendar View -->
+      <section id="calendarSection" class="lg:col-span-7 glass-panel rounded-2xl p-3 sm:p-3.5 shadow-xl flex flex-col gap-2.5">
+        
+        <!-- Calendar Header & Navigation Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/90 pb-2.5">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm">📅</span>
+              <h2 class="text-xs sm:text-sm font-bold text-white">Google Calendar (สด)</h2>
+              <span id="weekEventCountBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">0 นัดหมาย</span>
+            </div>
+            <p id="weekRangeSubtitle" class="text-[11px] text-indigo-300 mt-0.5">กำลังคำนวณสัปดาห์...</p>
+          </div>
+
+          <!-- Controls -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <div class="flex items-center bg-slate-900 rounded-xl border border-slate-800 p-0.5">
+              <button id="btnPrevWeek" type="button" class="px-2 py-1 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition" title="สัปดาห์ก่อนหน้า">◀</button>
+              <button id="btnTodayWeek" type="button" class="px-2.5 py-1 text-xs font-medium text-indigo-300 hover:text-white hover:bg-slate-800 rounded-lg transition">วันนี้</button>
+              <button id="btnNextWeek" type="button" class="px-2 py-1 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition" title="สัปดาห์ถัดไป">▶</button>
+            </div>
+            <button id="btnToggleAddEvent" type="button" class="text-xs px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition font-medium flex items-center gap-1 shadow-sm">
+              <span>+</span>
+              <span>นัดหมาย</span>
+            </button>
+            <button id="btnRefreshCalendar" type="button" class="text-xs px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 transition" title="รีเฟรช Google Calendar สด">
+              🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Account Filter Checkboxes -->
+        <div class="flex flex-wrap items-center justify-between gap-1.5 bg-slate-900/60 px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-[11px]">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-slate-400">บัญชี:</span>
+            <label class="inline-flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" id="chkCalPrimary" checked class="rounded text-indigo-500 focus:ring-0" />
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <span class="text-slate-200">ส่วนตัว</span>
+            </label>
+            <label class="inline-flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" id="chkCalCoop" checked class="rounded text-amber-500 focus:ring-0" />
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span class="text-slate-200">สหกรณ์</span>
+            </label>
+          </div>
+          <select id="weekViewMode" class="bg-slate-800 text-slate-300 text-[10px] rounded-lg px-2 py-1 border border-slate-700 focus:outline-none">
+            <option value="rolling7" selected>7 วันจากนี้ (Rolling)</option>
+            <option value="monSun">จันทร์ – อาทิตย์</option>
+          </select>
+        </div>
+
+        <!-- Collapsible Add Event Form -->
+        <form id="addEventForm" class="hidden bg-slate-900/95 p-3 rounded-xl border border-indigo-500/40 flex-col gap-2 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+            <span class="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
+              <span>📅</span> บันทึกลง Google Calendar จริง (สด)
+            </span>
+            <button id="btnCloseAddEvent" type="button" class="text-xs text-slate-400 hover:text-white">✕ ปิด</button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <input id="evtTitle" type="text" placeholder="ชื่อกิจกรรม / นัดหมาย..." required class="sm:col-span-2 bg-slate-800 text-xs text-white rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" />
+            <input id="evtDate" type="date" required class="bg-slate-800 text-xs text-white rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" />
+            <input id="evtTime" type="text" placeholder="เช่น 09:30 - 11:00 หรือ ทั้งวัน" value="09:00 - 10:30" class="bg-slate-800 text-xs text-white rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800">
+            <div class="flex items-center gap-1.5 text-xs text-slate-300">
+              <span>ลงปฏิทิน:</span>
+              <select id="evtCalendarSelect" class="bg-slate-800 text-xs text-indigo-200 rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none">
+                <option value="pattarapon.thongsri@gmail.com">ส่วนตัว (pattarapon.thongsri@gmail.com)</option>
+                <option value="coopthaiict@gmail.com">สหกรณ์ (coopthaiict@gmail.com)</option>
+              </select>
+            </div>
+            <button id="btnSubmitAddEvent" type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+              <span>📅 บันทึกลง Google Calendar</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- 7-Day Calendar Events Container -->
+        <div id="weekDaysContainer" class="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Setup & Help Modal -->
+  <div id="setupModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl flex flex-col gap-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+          <span>⚙️</span> การตั้งค่า & ตัวเปิดใช้งาน
+        </h3>
+        <button id="btnCloseSetupModal" type="button" class="text-xs text-slate-400 hover:text-white px-2 py-1">✕ ปิด</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        โปรแกรมนี้ได้รับการตั้งค่าให้ซิงก์ข้อมูลกลางที่ <code class="text-indigo-300 font-mono">desktop_todo_data.json</code> และซิงก์กับ Google Calendar สดเรียบร้อยแล้ว
+      </p>
+      <div class="flex flex-col gap-2">
+        <button id="btnPopoutCorner" type="button" class="w-full text-xs py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition text-left flex items-center justify-between">
+          <span>↗️ จัดหน้าต่างให้ชิดมุมขวาบนของหน้าจอ</span>
+          <span>จัดหน้าต่าง</span>
+        </button>
+        <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-[11px] text-slate-300">
+          💡 สามารถดับเบิลคลิกไฟล์ <strong>Open_Widget_Right_Corner.bat</strong> หรือไอคอน <strong>Python Widget (Always On Top)</strong> บน Desktop เพื่อเปิดทำงานค้างไว้ได้ตลอดเวลา
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notion Setup & Status Modal -->
+  <div id="notionModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl flex flex-col gap-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+          <span>📝</span> เชื่อมต่อ Notion (To-Do Cloud Sync)
+        </h3>
+        <button id="btnCloseNotionModal" type="button" class="text-xs text-slate-400 hover:text-white px-2 py-1">✕ ปิด</button>
+      </div>
+
+      <!-- Current Status Alert -->
+      <div id="notionModalStatusCard" class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex flex-col gap-1 text-xs">
+        <div id="notionModalStatus" class="font-medium text-amber-300">กำลังตรวจสอบสถานะ...</div>
+        <div id="notionModalInfo" class="text-[11px] text-slate-400 leading-normal"></div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex flex-col gap-1.5 text-xs text-slate-300">
+        <div class="font-semibold text-indigo-300 flex items-center gap-1">
+          <span>📌</span> วิธีเชื่อมต่อกับ Notion ของคุณ:
+        </div>
+        <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
+          <li>เปิดหน้า <strong>Notion</strong> (ในแอปหรือเว็บบราวเซอร์) ที่ต้องการเก็บ To-Do</li>
+          <li>กดปุ่มจุดสามจุด <strong><code>...</code></strong> ที่มุมขวาบนของหน้านั้น</li>
+          <li>เลื่อนไปที่ <strong>Connections</strong> (หรือ Add connections)</li>
+          <li>ค้นหาและเลือก <strong><code class="text-emerald-400 font-bold">ICT</code></strong> แล้วกดยืนยัน</li>
+          <li>กลับมากดปุ่ม <strong>"ตรวจหาและเชื่อมต่ออัตโนมัติ"</strong> ด้านล่าง</li>
+        </ol>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col gap-2 pt-1">
+        <button id="btnNotionAutoDetect" type="button" class="w-full text-xs py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition flex items-center justify-center gap-1.5 shadow-md">
+          <span>🔍</span> ตรวจหาและเชื่อมต่ออัตโนมัติ (Auto-Detect)
+        </button>
+        <button id="btnNotionModalSync" type="button" class="w-full text-xs py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1.5">
+          <span>🔄</span> ซิงก์ข้อมูลทันที (Sync Now)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic & Real-time Sync Engine -->
+  <script>
+    // --- Safe Storage Helper ---
+    function loadStorage(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return JSON.parse(raw);
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function saveStorage(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {}
+    }
+
+    // --- Shared JSON & Google Calendar Sync ---
+    const SYNC_API_URL = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:18234';
+    let isLocalSaving = false;
+
+    function setSyncStatusBadge(connected) {
+      const badge = document.getElementById('syncBadge');
+      const text = document.getElementById('syncStatusText');
+      if (!badge || !text) return;
+      if (connected) {
+        badge.className = 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1 shrink-0';
+        text.textContent = '🟢 ซิงก์สด (GCal & To-Do)';
+        badge.title = 'เชื่อมต่อฐานข้อมูลและ Google Calendar สดเรียบร้อยแล้ว';
+      } else {
+        badge.className = 'text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 shrink-0';
+        text.textContent = '🟡 กำลังเชื่อมต่อฐานข้อมูล...';
+        badge.title = 'กำลังค้นหา Background Sync Server...';
+      }
+    }
+
+    async function syncFetchData() {
+      try {
+        const res = await fetch(`${SYNC_API_URL}/api/data`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        setSyncStatusBadge(true);
+
+        if (data && Array.isArray(data.todos) && !isLocalSaving) {
+          const normalized = data.todos.map(t => {
+            const done = !!(t.done || t.completed);
+            return {
+              id: t.id || 'todo-' + Math.random(),
+              text: t.text || '',
+              dueDate: t.dueDate || toISODate(new Date()),
+              priority: t.priority || 'medium',
+              category: t.category || 'งานประจำ',
+              completed: done,
+              done: done
+            };
+          });
+
+          const currentJson = JSON.stringify(todos.map(t => ({ id: t.id, text: t.text, done: !!(t.done || t.completed) })));
+          const remoteJson = JSON.stringify(normalized.map(t => ({ id: t.id, text: t.text, done: !!(t.done || t.completed) })));
+          if (currentJson !== remoteJson) {
+            todos = normalized;
+            saveStorage('desktop_widget_todos_v1', todos);
+            renderTodos();
+            renderWeekCalendar();
+          }
+        }
+
+        if (data && Array.isArray(data.events) && data.events.length > 0) {
+          const currentEventsJson = JSON.stringify(calendarEvents.map(e => e.id));
+          const remoteEventsJson = JSON.stringify(data.events.map(e => e.id));
+          if (currentEventsJson !== remoteEventsJson) {
+            calendarEvents = data.events;
+            saveStorage('desktop_widget_events_v1', calendarEvents);
+            renderWeekCalendar();
+          }
+        }
+      } catch (err) {
+        setSyncStatusBadge(false);
+      }
+    }
+
+    async function syncFetchCalendar(notify = false) {
+      try {
+        const res = await fetch(`${SYNC_API_URL}/api/calendar/events`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('Calendar API error');
+        const liveEvents = await res.json();
+        if (Array.isArray(liveEvents)) {
+          calendarEvents = liveEvents;
+          saveStorage('desktop_widget_events_v1', calendarEvents);
+          setSyncStatusBadge(true);
+          renderWeekCalendar();
+          if (notify) showToast(`✅ ดึงนัดหมายสดจาก Google Calendar สำเร็จ (${liveEvents.length} กิจกรรม)`);
+        }
+      } catch (err) {
+        if (notify) showToast('⚠️ กำลังใช้ข้อมูลแคช (กำลังรอรอบซิงก์ Google Calendar ถัดไป)');
+      }
+    }
+
+    async function syncSaveTodos(newTodos) {
+      todos = newTodos.map(t => {
+        const done = !!(t.completed || t.done);
+        return { ...t, completed: done, done: done };
+      });
+      saveStorage('desktop_widget_todos_v1', todos);
+      isLocalSaving = true;
+      try {
+        await fetch(`${SYNC_API_URL}/api/todos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(todos)
+        });
+        setSyncStatusBadge(true);
+      } catch (e) {
+        setSyncStatusBadge(false);
+      } finally {
+        setTimeout(() => { isLocalSaving = false; }, 350);
+      }
+    }
+
+    // --- Notion Integration Engine ---
+    async function checkNotionStatus() {
+      try {
+        const res = await fetch(`${SYNC_API_URL}/api/notion/status`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const dot = document.getElementById('notionStatusDot');
+        const text = document.getElementById('notionStatusText');
+        const modalStatus = document.getElementById('notionModalStatus');
+        const modalInfo = document.getElementById('notionModalInfo');
+
+        if (data.database_id) {
+          if (dot) {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+          }
+          if (text) {
+            text.textContent = 'Notion เชื่อมแล้ว';
+          }
+          if (modalStatus) {
+            modalStatus.innerHTML = '<span class="text-emerald-400 font-semibold flex items-center gap-1.5">🟢 เชื่อมต่อกับ Notion Database สำเร็จแล้ว</span>';
+          }
+          if (modalInfo) {
+            modalInfo.innerHTML = `Workspace: <span class="text-white">${data.workspace || 'Notion'}</span> | Database ID: <code class="text-indigo-300 font-mono text-[10px]">${data.database_id}</code>`;
+          }
+        } else {
+          if (dot) {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
+          }
+          if (text) {
+            text.textContent = 'เชื่อม Notion';
+          }
+          if (modalStatus) {
+            modalStatus.innerHTML = '<span class="text-amber-400 font-semibold flex items-center gap-1.5">🟡 พร้อมเชื่อมต่อ (รอแชร์หน้าใน Notion)</span>';
+          }
+          if (modalInfo) {
+            modalInfo.innerHTML = `บอท: <strong class="text-emerald-300">ICT</strong> | Workspace: <strong class="text-white">${data.workspace || 'pattarapon thongsri’s Space'}</strong>`;
+          }
+        }
+      } catch (e) {
+        // Silently skip if server not reachable
+      }
+    }
+
+    async function triggerNotionSync(notify = true) {
+      const icon = document.getElementById('notionSyncIcon');
+      if (icon) icon.classList.add('animate-spin');
+      try {
+        const res = await fetch(`${SYNC_API_URL}/api/notion/sync`, { method: 'POST' });
+        if (!res.ok) throw new Error('Sync error');
+        const data = await res.json();
+        if (data.todos && Array.isArray(data.todos)) {
+          todos = data.todos.map(t => {
+            const done = !!(t.completed || t.done);
+            return { ...t, completed: done, done: done };
+          });
+          saveStorage('desktop_widget_todos_v1', todos);
+          renderTodos();
+          renderWeekCalendar();
+          checkNotionStatus();
+          if (notify) showToast(`✅ ซิงก์ข้อมูล Notion สำเร็จ (${todos.length} รายการ)`);
+        }
+      } catch (e) {
+        if (notify) showToast('⚠️ ซิงก์ Notion ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ');
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+      }
+    }
+
+    async function triggerNotionAutoConnect() {
+      const btn = document.getElementById('btnNotionAutoDetect');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>⏳</span> กำลังตรวจหาหน้าหรือตารางใน Notion...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${SYNC_API_URL}/api/notion/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'ไม่พบหน้าหรือตารางที่แชร์ให้ ICT กรุณาเปิด Notion แล้วเชื่อมต่อ ICT ในหน้านั้นก่อนครับ');
+          return;
+        }
+
+        showToast('🎉 เชื่อมต่อ Notion สำเร็จ! งาน To-Do ซิงก์ขึ้น Notion แล้ว');
+        checkNotionStatus();
+        if (data.todos && Array.isArray(data.todos)) {
+          todos = data.todos.map(t => {
+            const done = !!(t.completed || t.done);
+            return { ...t, completed: done, done: done };
+          });
+          saveStorage('desktop_widget_todos_v1', todos);
+          renderTodos();
+          renderWeekCalendar();
+        }
+        const modal = document.getElementById('notionModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ Notion: ' + e.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // --- State Initialization ---
+    let todos = loadStorage('desktop_widget_todos_v1', []);
+    let calendarEvents = loadStorage('desktop_widget_events_v1', []);
+    let currentFilter = 'all';
+    let currentTab = 'todo'; // 'todo' | 'calendar' | 'dual'
+    let isCompactCorner = false;
+
+    function getSystemToday() {
+      return new Date();
+    }
+    let currentAnchorDate = getSystemToday();
+
+    // --- Toast Notification ---
+    function showToast(msg) {
+      const container = document.getElementById('toastContainer');
+      const item = document.createElement('div');
+      item.className = 'bg-slate-900/95 border border-indigo-500/50 text-slate-100 text-xs px-3.5 py-2 rounded-xl shadow-2xl transition-all';
+      item.textContent = msg;
+      container.appendChild(item);
+      setTimeout(() => {
+        item.style.opacity = '0';
+        setTimeout(() => item.remove(), 300);
+      }, 2600);
+    }
+
+    // --- Date Formatting Helpers ---
+    const THAI_DAYS_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+    const THAI_DAYS_FULL = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+    const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+    function toISODate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatThaiShortDate(isoStr) {
+      if (!isoStr) return '';
+      const parts = isoStr.split('-');
+      if (parts.length !== 3) return isoStr;
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return `${THAI_DAYS_SHORT[d.getDay()]} ${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+    }
+
+    // --- Live Clock & Real Date ---
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('liveTime').textContent = `${hh}:${mm}:${ss}`;
+      document.getElementById('liveDate').textContent =
+        `${THAI_DAYS_FULL[now.getDay()]}ที่ ${now.getDate()} ${THAI_MONTHS_FULL[now.getMonth()]} ${now.getFullYear()}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --- Tab Switching Logic (Fixes Cramped Right Corner Layout) ---
+    const tabBtnTodo = document.getElementById('tabBtnTodo');
+    const tabBtnCalendar = document.getElementById('tabBtnCalendar');
+    const tabBtnDual = document.getElementById('tabBtnDual');
+    const todoSection = document.getElementById('todoSection');
+    const calendarSection = document.getElementById('calendarSection');
+    const widgetGrid = document.getElementById('widgetGrid');
+
+    function setTab(tab) {
+      currentTab = tab;
+      const activeClass = 'bg-indigo-600 text-white shadow-sm';
+      const inactiveClass = 'text-slate-400 hover:text-white hover:bg-slate-800/60';
+
+      tabBtnTodo.className = `flex-1 py-1.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 ${tab === 'todo' ? activeClass : inactiveClass}`;
+      tabBtnCalendar.className = `flex-1 py-1.5 px-2 rounded-xl transition flex items-center justify-center gap-1.5 ${tab === 'calendar' ? activeClass : inactiveClass}`;
+      tabBtnDual.className = `py-1.5 px-2.5 rounded-xl transition flex items-center justify-center gap-1 ${tab === 'dual' ? activeClass : inactiveClass}`;
+
+      if (tab === 'todo') {
+        todoSection.classList.remove('hidden');
+        todoSection.className = 'col-span-1 lg:col-span-12 glass-panel rounded-2xl p-3 sm:p-3.5 shadow-xl flex flex-col gap-2.5';
+        calendarSection.classList.add('hidden');
+      } else if (tab === 'calendar') {
+        todoSection.classList.add('hidden');
+        calendarSection.classList.remove('hidden');
+        calendarSection.className = 'col-span-1 lg:col-span-12 glass-panel rounded-2xl p-3 sm:p-3.5 shadow-xl flex flex-col gap-2.5';
+      } else {
+        // Dual / Split View
+        todoSection.classList.remove('hidden');
+        calendarSection.classList.remove('hidden');
+        todoSection.className = 'lg:col-span-5 glass-panel rounded-2xl p-3 sm:p-3.5 shadow-xl flex flex-col gap-2.5';
+        calendarSection.className = 'lg:col-span-7 glass-panel rounded-2xl p-3 sm:p-3.5 shadow-xl flex flex-col gap-2.5';
+      }
+    }
+
+    tabBtnTodo.addEventListener('click', () => setTab('todo'));
+    tabBtnCalendar.addEventListener('click', () => setTab('calendar'));
+    tabBtnDual.addEventListener('click', () => setTab('dual'));
+
+    // --- Render To-Do List ---
+    function renderTodos() {
+      const listEl = document.getElementById('todoListContainer');
+      listEl.innerHTML = '';
+
+      const totalCount = todos.length;
+      const doneCount = todos.filter(t => t.completed).length;
+      const pct = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
+
+      document.getElementById('todoProgressText').textContent = `เสร็จแล้ว ${doneCount}/${totalCount} งาน (${pct}%)`;
+      document.getElementById('todoProgressBar').style.width = `${pct}%`;
+      document.getElementById('tabTodoCount').textContent = totalCount;
+
+      const filtered = todos.filter(t => {
+        if (currentFilter === 'active') return !t.completed;
+        if (currentFilter === 'done') return t.completed;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-center py-6 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl';
+        empty.textContent = 'ไม่มีรายการงาน เพิ่มงานใหม่ด้านบนได้เลย';
+        listEl.appendChild(empty);
+        return;
+      }
+
+      const priorityBadge = {
+        high: { label: 'สำคัญมาก', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
+        medium: { label: 'ปานกลาง', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+        low: { label: 'ทั่วไป', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' }
+      };
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `glass-card rounded-xl p-2.5 flex items-start justify-between gap-2 ${item.completed ? 'opacity-60' : ''}`;
+
+        const left = document.createElement('div');
+        left.className = 'flex items-start gap-2 flex-1 min-w-0';
+
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = !!item.completed;
+        chk.className = 'mt-1 rounded text-indigo-500 focus:ring-0 cursor-pointer';
+        chk.addEventListener('change', () => {
+          item.completed = chk.checked;
+          item.done = chk.checked;
+          syncSaveTodos(todos);
+          renderTodos();
+          renderWeekCalendar();
+        });
+
+        const content = document.createElement('div');
+        content.className = 'flex-1 min-w-0';
+
+        const title = document.createElement('div');
+        title.className = `text-xs sm:text-sm font-medium break-words ${item.completed ? 'line-through text-slate-400' : 'text-slate-100'}`;
+        title.textContent = item.text;
+
+        const meta = document.createElement('div');
+        meta.className = 'flex flex-wrap items-center gap-1.5 mt-1';
+
+        const pInfo = priorityBadge[item.priority] || priorityBadge.medium;
+        const pSpan = document.createElement('span');
+        pSpan.className = `text-[10px] px-2 py-0.5 rounded-full border ${pInfo.cls}`;
+        pSpan.textContent = pInfo.label;
+        meta.appendChild(pSpan);
+
+        if (item.category) {
+          const cSpan = document.createElement('span');
+          cSpan.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+          cSpan.textContent = item.category;
+          meta.appendChild(cSpan);
+        }
+
+        if (item.dueDate) {
+          const dSpan = document.createElement('span');
+          const todayIso = toISODate(new Date());
+          const isToday = item.dueDate === todayIso;
+          dSpan.className = `text-[10px] px-2 py-0.5 rounded-full ${isToday ? 'bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-semibold' : 'text-slate-400'}`;
+          dSpan.textContent = `📅 ${isToday ? 'วันนี้ (' + formatThaiShortDate(item.dueDate) + ')' : formatThaiShortDate(item.dueDate)}`;
+          meta.appendChild(dSpan);
+        }
+
+        content.appendChild(title);
+        content.appendChild(meta);
+        left.appendChild(chk);
+        left.appendChild(content);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded transition shrink-0';
+        delBtn.title = 'ลบรายการ';
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', () => {
+          todos = todos.filter(t => t.id !== item.id);
+          syncSaveTodos(todos);
+          renderTodos();
+          renderWeekCalendar();
+          showToast('ลบรายการ To-Do แล้ว');
+        });
+
+        card.appendChild(left);
+        card.appendChild(delBtn);
+        listEl.appendChild(card);
+      });
+    }
+
+    // --- Render 1-Week Google Calendar View ---
+    function getWeekStartDate(anchor, mode) {
+      const d = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+      if (mode === 'monSun') {
+        const day = d.getDay(); // 0=Sun,1=Mon...
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+      }
+      return d;
+    }
+
+    function renderWeekCalendar() {
+      const mode = document.getElementById('weekViewMode').value;
+      const showPrimary = document.getElementById('chkCalPrimary').checked;
+      const showCoop = document.getElementById('chkCalCoop').checked;
+
+      const startDay = getWeekStartDate(currentAnchorDate, mode);
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + i);
+        days.push(d);
+      }
+
+      const endDay = days[6];
+      document.getElementById('weekRangeSubtitle').textContent =
+        `${startDay.getDate()} ${THAI_MONTHS_SHORT[startDay.getMonth()]} ${startDay.getFullYear()} – ${endDay.getDate()} ${THAI_MONTHS_SHORT[endDay.getMonth()]} ${endDay.getFullYear()}`;
+
+      const container = document.getElementById('weekDaysContainer');
+      container.innerHTML = '';
+
+      let totalWeekEvents = 0;
+
+      days.forEach(d => {
+        const iso = toISODate(d);
+        const todayIso = toISODate(new Date());
+        const isToday = iso === todayIso;
+
+        const dayEvents = calendarEvents.filter(ev => {
+          if (ev.date !== iso) return false;
+          if (ev.sourceType === 'primary' && !showPrimary) return false;
+          if (ev.sourceType === 'coop' && !showCoop) return false;
+          return true;
+        });
+
+        const dayTodos = todos.filter(t => t.dueDate === iso && !t.completed);
+        totalWeekEvents += dayEvents.length;
+
+        const row = document.createElement('div');
+        row.className = `rounded-xl p-2.5 border transition ${
+          isToday
+            ? 'bg-indigo-950/45 border-indigo-500/60 shadow-md'
+            : 'bg-slate-900/55 border-slate-800/90 hover:border-slate-700'
+        }`;
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between gap-2 mb-1.5';
+
+        const leftDate = document.createElement('div');
+        leftDate.className = 'flex items-center gap-2';
+
+        const dateBadge = document.createElement('div');
+        dateBadge.className = `w-7 h-7 rounded-lg flex flex-col items-center justify-center text-xs font-bold ${
+          isToday ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300'
+        }`;
+        dateBadge.textContent = d.getDate();
+
+        const dayTitle = document.createElement('div');
+        dayTitle.innerHTML = `
+          <span class="text-xs sm:text-sm font-semibold ${isToday ? 'text-indigo-200' : 'text-slate-200'}">
+            ${THAI_DAYS_FULL[d.getDay()]}
+          </span>
+          <span class="text-[11px] text-slate-400 ml-1">${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}</span>
+          ${isToday ? '<span class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500 text-white font-semibold">วันนี้</span>' : ''}
+        `;
+
+        leftDate.appendChild(dateBadge);
+        leftDate.appendChild(dayTitle);
+
+        const rightCount = document.createElement('div');
+        rightCount.className = 'text-[11px] text-slate-400';
+        rightCount.textContent = dayEvents.length > 0 ? `${dayEvents.length} นัดหมาย` : 'ว่าง';
+
+        header.appendChild(leftDate);
+        header.appendChild(rightCount);
+        row.appendChild(header);
+
+        const itemsBox = document.createElement('div');
+        itemsBox.className = 'space-y-1.5 pl-9';
+
+        if (dayEvents.length === 0 && dayTodos.length === 0) {
+          const emptyMsg = document.createElement('div');
+          emptyMsg.className = 'text-[11px] text-slate-500 italic';
+          emptyMsg.textContent = 'ไม่มีนัดหมาย';
+          itemsBox.appendChild(emptyMsg);
+        }
+
+        dayEvents.forEach(ev => {
+          const evCard = document.createElement('div');
+          const isCoop = ev.sourceType === 'coop';
+          const isHoliday = ev.sourceType === 'holiday';
+          evCard.className = `flex items-center justify-between gap-2 p-2 rounded-lg border text-xs ${
+            isHoliday
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-100'
+              : isCoop
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-100'
+              : 'bg-sky-500/10 border-sky-500/30 text-sky-100'
+          }`;
+
+          const info = document.createElement('div');
+          info.className = 'flex items-center gap-1.5 min-w-0 flex-1';
+
+          const dot = document.createElement('span');
+          dot.className = `w-2 h-2 rounded-full shrink-0 ${isHoliday ? 'bg-rose-400' : isCoop ? 'bg-amber-400' : 'bg-sky-400'}`;
+
+          const textWrap = document.createElement('div');
+          textWrap.className = 'truncate';
+          textWrap.innerHTML = `
+            <span class="font-semibold mr-1.5">${ev.time}</span>
+            <span>${ev.title}</span>
+          `;
+
+          info.appendChild(dot);
+          info.appendChild(textWrap);
+          evCard.appendChild(info);
+
+          if (ev.url) {
+            const link = document.createElement('a');
+            link.href = ev.url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.className = 'text-[10px] px-2 py-0.5 rounded bg-slate-900/70 hover:bg-slate-900 text-indigo-300 border border-slate-700 transition shrink-0';
+            link.textContent = 'เปิด ↗';
+            evCard.appendChild(link);
+          }
+
+          itemsBox.appendChild(evCard);
+        });
+
+        dayTodos.forEach(td => {
+          const tdBadge = document.createElement('div');
+          tdBadge.className = 'flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[11px] text-emerald-200';
+          tdBadge.innerHTML = `<span>📌 To-Do: ${td.text}</span><span class="text-[10px] text-emerald-400">${td.category}</span>`;
+          itemsBox.appendChild(tdBadge);
+        });
+
+        row.appendChild(itemsBox);
+        container.appendChild(row);
+      });
+
+      document.getElementById('weekEventCountBadge').textContent = `${totalWeekEvents} นัดหมาย`;
+      document.getElementById('tabCalCount').textContent = totalWeekEvents;
+    }
+
+    // --- Event Listeners ---
+    document.getElementById('todoForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('todoInput');
+      const dueDate = document.getElementById('todoDueDate').value || toISODate(new Date());
+      const priority = document.getElementById('todoPriority').value;
+      const category = document.getElementById('todoCategory').value;
+      const text = input.value.trim();
+      if (!text) return;
+
+      todos.unshift({
+        id: 'todo-' + Date.now(),
+        text,
+        dueDate,
+        priority,
+        category,
+        completed: false,
+        done: false
+      });
+      input.value = '';
+      syncSaveTodos(todos);
+      renderTodos();
+      renderWeekCalendar();
+      showToast('เพิ่มงานใน To-Do List แล้ว (บันทึกลงฐานข้อมูลกลาง)');
+    });
+
+    document.querySelectorAll('.todo-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.getAttribute('data-filter');
+        document.querySelectorAll('.todo-filter-btn').forEach(b => {
+          b.className = 'todo-filter-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition';
+        });
+        btn.className = 'todo-filter-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-medium transition';
+        renderTodos();
+      });
+    });
+
+    document.getElementById('btnClearCompleted').addEventListener('click', () => {
+      const before = todos.length;
+      todos = todos.filter(t => !t.completed);
+      if (todos.length < before) {
+        syncSaveTodos(todos);
+        renderTodos();
+        renderWeekCalendar();
+        showToast('ล้างรายการที่เสร็จแล้วเรียบร้อย');
+      } else {
+        showToast('ยังไม่มีรายการที่ทำเสร็จแล้ว');
+      }
+    });
+
+    // Calendar Navigation & Filters
+    document.getElementById('weekViewMode').addEventListener('change', renderWeekCalendar);
+    document.getElementById('chkCalPrimary').addEventListener('change', renderWeekCalendar);
+    document.getElementById('chkCalCoop').addEventListener('change', renderWeekCalendar);
+
+    document.getElementById('btnPrevWeek').addEventListener('click', () => {
+      currentAnchorDate.setDate(currentAnchorDate.getDate() - 7);
+      renderWeekCalendar();
+    });
+
+    document.getElementById('btnNextWeek').addEventListener('click', () => {
+      currentAnchorDate.setDate(currentAnchorDate.getDate() + 7);
+      renderWeekCalendar();
+    });
+
+    document.getElementById('btnTodayWeek').addEventListener('click', () => {
+      currentAnchorDate = getSystemToday();
+      renderWeekCalendar();
+      showToast(`กลับมาที่สัปดาห์ปัจจุบัน (${formatThaiShortDate(toISODate(new Date()))})`);
+    });
+
+    // Refresh Buttons
+    function triggerRefresh() {
+      const icon = document.getElementById('headerRefreshIcon');
+      if (icon) icon.classList.add('inline-block', 'animate-spin');
+      syncFetchCalendar(true).finally(() => {
+        if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 600);
+      });
+    }
+
+    document.getElementById('btnHeaderRefresh').addEventListener('click', triggerRefresh);
+    document.getElementById('btnRefreshCalendar').addEventListener('click', triggerRefresh);
+
+    // Add Event Form Toggle & Submit
+    const addEventForm = document.getElementById('addEventForm');
+    document.getElementById('btnToggleAddEvent').addEventListener('click', () => {
+      addEventForm.classList.toggle('hidden');
+      addEventForm.classList.toggle('flex');
+    });
+    document.getElementById('btnCloseAddEvent').addEventListener('click', () => {
+      addEventForm.classList.add('hidden');
+      addEventForm.classList.remove('flex');
+    });
+
+    addEventForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('evtTitle').value.trim();
+      const date = document.getElementById('evtDate').value;
+      const time = document.getElementById('evtTime').value.trim() || 'ทั้งวัน';
+      const calendarSelect = document.getElementById('evtCalendarSelect');
+      const calendar = calendarSelect ? calendarSelect.value : 'pattarapon.thongsri@gmail.com';
+      if (!title || !date) return;
+
+      const submitBtn = document.getElementById('btnSubmitAddEvent');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>⏳ กำลังบันทึกเข้า Google Calendar...</span>';
+      }
+
+      try {
+        const res = await fetch(`${SYNC_API_URL}/api/calendar/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, date, time, calendar })
+        });
+        if (!res.ok) throw new Error('API request failed');
+        const data = await res.json();
+        showToast('✅ บันทึกลง Google Calendar จริงเรียบร้อยแล้ว!');
+        document.getElementById('evtTitle').value = '';
+        addEventForm.classList.add('hidden');
+        addEventForm.classList.remove('flex');
+        await syncFetchCalendar(false);
+      } catch (err) {
+        calendarEvents.push({
+          id: 'custom-' + Date.now(),
+          title,
+          date,
+          time,
+          calendar,
+          sourceType: calendar.includes('coop') ? 'coop' : 'primary',
+          url: ''
+        });
+        saveStorage('desktop_widget_events_v1', calendarEvents);
+        renderWeekCalendar();
+        showToast('⚠️ ไม่สามารถเชื่อมต่อ Google Calendar สดได้ (บันทึกในเครื่องแทน)');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>📅 บันทึกลง Google Calendar</span>';
+        }
+      }
+    });
+
+    // Layout Toggle (Compact / Fullscreen)
+    document.getElementById('btnToggleLayout').addEventListener('click', () => {
+      isCompactCorner = !isCompactCorner;
+      const container = document.getElementById('widgetContainer');
+      const label = document.getElementById('layoutLabel');
+
+      if (isCompactCorner) {
+        container.classList.remove('max-w-6xl');
+        container.classList.add('dock-simulation-right');
+        label.textContent = 'เต็มจอ';
+        showToast('สลับเป็นโหมด Compact ชิดขอบจอขวา');
+      } else {
+        container.classList.add('max-w-6xl');
+        container.classList.remove('dock-simulation-right');
+        label.textContent = 'ขยาย';
+        showToast('สลับเป็นโหมดแสดงผลกว้าง');
+      }
+    });
+
+    // Pop-out / Move Window to Right Corner
+    document.getElementById('btnPopoutCorner').addEventListener('click', () => {
+      const w = 420;
+      const h = window.screen.availHeight - 40;
+      const left = window.screen.availWidth - w - 10;
+      try {
+        window.resizeTo(w, h);
+        window.moveTo(left, 10);
+      } catch (err) {}
+      if (!isCompactCorner) {
+        document.getElementById('btnToggleLayout').click();
+      }
+      showToast('จัดหน้าต่างชิดมุมขวาจอเรียบร้อย');
+    });
+
+    // Setup Modal Toggle
+    const setupModal = document.getElementById('setupModal');
+    document.getElementById('btnOpenSetupModal').addEventListener('click', () => {
+      setupModal.classList.remove('hidden');
+      setupModal.classList.add('flex');
+    });
+    document.getElementById('btnCloseSetupModal').addEventListener('click', () => {
+      setupModal.classList.add('hidden');
+      setupModal.classList.remove('flex');
+    });
+
+    // Notion Modal & Controls
+    const notionModal = document.getElementById('notionModal');
+    const openNotionModal = () => {
+      checkNotionStatus();
+      notionModal.classList.remove('hidden');
+      notionModal.classList.add('flex');
+    };
+    document.getElementById('btnNotionBadge').addEventListener('click', openNotionModal);
+    document.getElementById('btnCloseNotionModal').addEventListener('click', () => {
+      notionModal.classList.add('hidden');
+      notionModal.classList.remove('flex');
+    });
+    document.getElementById('btnNotionAutoDetect').addEventListener('click', triggerNotionAutoConnect);
+    document.getElementById('btnNotionSyncNow').addEventListener('click', () => triggerNotionSync(true));
+    document.getElementById('btnNotionModalSync').addEventListener('click', () => triggerNotionSync(true));
+
+    // Initial Startup & Auto Dates
+    const todayStr = toISODate(new Date());
+    const todoDueInput = document.getElementById('todoDueDate');
+    if (todoDueInput) todoDueInput.value = todayStr;
+    const evtDateInput = document.getElementById('evtDate');
+    if (evtDateInput) evtDateInput.value = todayStr;
+
+    // Start on To-Do Tab by default for compact perfection
+    setTab('todo');
+    renderTodos();
+    renderWeekCalendar();
+
+    // Start Background Data Sync
+    syncFetchData();
+    syncFetchCalendar(false);
+    checkNotionStatus();
+
+    // Intervals
+    setInterval(syncFetchData, 2000);
+    setInterval(checkNotionStatus, 15000);
+    setInterval(() => syncFetchCalendar(false), 300000);
+  </script>
+</body>
+</html>

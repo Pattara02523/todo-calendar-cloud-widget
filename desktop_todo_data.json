@@ -1,0 +1,221 @@
+{
+  "todos": [
+    {
+      "id": "3ff16fa7-85cd-81a6-bd7f-c03878b1edbe",
+      "text": "ลบอัลบั้มรูปกลุ่มline",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": true,
+      "done": true,
+      "notion_url": "https://app.notion.com/p/line-3ff16fa785cd81a6bd7fc03878b1edbe"
+    },
+    {
+      "id": "3ff16fa7-85cd-81aa-9c1f-cc01af4fd52b",
+      "text": "ติดต่อร้านคอม",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": true,
+      "done": true,
+      "notion_url": "https://app.notion.com/p/3ff16fa785cd81aa9c1fcc01af4fd52b"
+    },
+    {
+      "id": "3ff16fa7-85cd-8125-a148-dc93c591b604",
+      "text": "ตามเรื่องห้องอบรม",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": true,
+      "done": true,
+      "notion_url": "https://app.notion.com/p/3ff16fa785cd8125a148dc93c591b604"
+    },
+    {
+      "id": "3ff16fa7-85cd-81cb-9fda-f30cc72ecaa6",
+      "text": "เตรียมเว็บword",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/word-3ff16fa785cd81cb9fdaf30cc72ecaa6"
+    },
+    {
+      "id": "3ff16fa7-85cd-8195-ade0-f8523e1c5b50",
+      "text": "pattarapon thongsri",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/pattarapon-thongsri-3ff16fa785cd8195ade0f8523e1c5b50"
+    },
+    {
+      "id": "3fe16fa7-85cd-806d-a95c-d7dbfe94a5f4",
+      "text": "Click the blue New button to add a task",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/Click-the-blue-New-button-to-add-a-task-3fe16fa785cd806da95cd7dbfe94a5f4"
+    },
+    {
+      "id": "3fe16fa7-85cd-80bd-a5d9-e7dd5ff5c1e2",
+      "text": "Check the box to mark items as done",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": true,
+      "done": true,
+      "notion_url": "https://app.notion.com/p/Check-the-box-to-mark-items-as-done-3fe16fa785cd80bda5d9e7dd5ff5c1e2"
+    },
+    {
+      "id": "3fe16fa7-85cd-8016-9c89-dfb49ba95ebb",
+      "text": "See finished items in the “Done” view",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/See-finished-items-in-the-Done-view-3fe16fa785cd80169c89dfb49ba95ebb"
+    },
+    {
+      "id": "3fe16fa7-85cd-801e-a9cf-c544c37c4f80",
+      "text": "Click me to see even more detail",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/Click-me-to-see-even-more-detail-3fe16fa785cd801ea9cfc544c37c4f80"
+    },
+    {
+      "id": "3fe16fa7-85cd-803a-93d8-c0f98d4ef775",
+      "text": "Click me to learn how to see your content your way",
+      "dueDate": "2026-10-21",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/Click-me-to-learn-how-to-see-your-content-your-way-3fe16fa785cd803a93d8c0f98d4ef775"
+    },
+    {
+      "id": "3fe16fa7-85cd-803d-a20a-fa2a8a248215",
+      "text": "Click the due date to change it",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/Click-the-due-date-to-change-it-3fe16fa785cd803da20afa2a8a248215"
+    },
+    {
+      "id": "3fe16fa7-85cd-80df-8894-cb395a713688",
+      "text": "Click me to learn how to hide checked items",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/Click-me-to-learn-how-to-hide-checked-items-3fe16fa785cd80df8894cb395a713688"
+    },
+    {
+      "id": "3ff16fa7-85cd-8198-81f7-eacaec1a26da",
+      "text": "pattarapon thongsri",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/pattarapon-thongsri-3ff16fa785cd819881f7eacaec1a26da"
+    },
+    {
+      "id": "3ff16fa7-85cd-8195-88d2-cb0d43861019",
+      "text": "เตรียมเว็บword",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/word-3ff16fa785cd819588d2cb0d43861019"
+    },
+    {
+      "id": "3ff16fa7-85cd-810e-8262-f775f01f1100",
+      "text": "ตามเรื่องห้องอบรม",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/3ff16fa785cd810e8262f775f01f1100"
+    },
+    {
+      "id": "3ff16fa7-85cd-8170-9af5-dccf2a04e255",
+      "text": "ติดต่อร้านคอม",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/3ff16fa785cd81709af5dccf2a04e255"
+    },
+    {
+      "id": "3ff16fa7-85cd-812a-b0bb-f101a66fddf6",
+      "text": "ลบอัลบั้มรูปกลุ่มline",
+      "dueDate": "2026-10-20",
+      "priority": "medium",
+      "category": "งานประจำ",
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/line-3ff16fa785cd812ab0bbf101a66fddf6"
+    }
+  ],
+  "events": [
+    {
+      "id": "35fnev97o51heq3i9qrf49gag8",
+      "title": "ประชุมกับคณะกรรมการดำเนินการ",
+      "date": "2026-10-22",
+      "time": "13:30 - 16:00",
+      "calendar": "coopthaiict@gmail.com",
+      "sourceType": "coop",
+      "url": "https://www.google.com/calendar/event?eid=MzVmbmV2OTdvNTFoZXEzaTlxcmY0OWdhZzggY29vcHRoYWlpY3RAbQ"
+    },
+    {
+      "id": "fhnfmbopcgrvt0fh3tjlfpl2k4",
+      "title": "วันปิยมหาราช",
+      "date": "2026-10-23",
+      "time": "ทั้งวัน",
+      "calendar": "pattarapon.thongsri@gmail.com",
+      "sourceType": "primary",
+      "url": "https://www.google.com/calendar/event?eid=ZmhuZm1ib3BjZ3J2dDBmaDN0amxmcGwyazQgcGF0dGFyYXBvbi50aG9uZ3NyaUBt"
+    },
+    {
+      "id": "20261023_s4c8dfpsa0bhobd921nbg749f0",
+      "title": "Chulalongkorn Day",
+      "date": "2026-10-23",
+      "time": "ทั้งวัน",
+      "calendar": "en.th#holiday@group.v.calendar.google.com",
+      "sourceType": "holiday",
+      "url": "https://www.google.com/calendar/event?eid=MjAyNjEwMjNfczRjOGRmcHNhMGJob2JkOTIxbmJnNzQ5ZjAgZW4udGgjaG9saWRheUB2"
+    },
+    {
+      "id": "7rr5i63slh4d49sk8g5sknh5lg",
+      "title": " โครงการอบรมเชิงปฏิบัติการ เรื่อง การสร้างสื่ออนิเมชั่น รุ่นที่ 2",
+      "date": "2026-10-24",
+      "time": "08:30 - 11:00",
+      "calendar": "coopthaiict@gmail.com",
+      "sourceType": "coop",
+      "url": "https://www.google.com/calendar/event?eid=N3JyNWk2M3NsaDRkNDlzazhnNXNrbmg1bGcgY29vcHRoYWlpY3RAbQ"
+    },
+    {
+      "id": "c5im8oj66thm8b9n6pi3ab9kcopjib9ocop68bb1cgs68chp75hmccpl6o",
+      "title": "เงินเดือน",
+      "date": "2026-10-27",
+      "time": "08:00 - 09:00",
+      "calendar": "coopthaiict@gmail.com",
+      "sourceType": "coop",
+      "url": "https://www.google.com/calendar/event?eid=YzVpbThvajY2dGhtOGI5bjZwaTNhYjlrY29wamliOW9jb3A2OGJiMWNnczY4Y2hwNzVobWNjcGw2byBjb29wdGhhaWljdEBt"
+    }
+  ]
+}

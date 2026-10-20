@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: todo-calendar-cloud-widget
+    runtime: python
+    buildCommand: ""
+    startCommand: python desktop_sync_server.py
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NOTION_API_TOKEN
+        sync: false
+      - key: NOTION_DATABASE_ID
+        sync: false
+      - key: GOOGLE_CALENDAR_CRED_JSON
+        sync: false
+      - key: GOOGLE_CALENDAR_KEYS_JSON
+        sync: false
