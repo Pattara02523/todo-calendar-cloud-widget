@@ -1,34 +1,14 @@
 {
   "todos": [
     {
-      "id": "3ff16fa7-85cd-8169-b86f-d9500cb64e79",
+      "id": "3ff16fa7-85cd-81a7-93ca-d957ccadbae0",
       "text": "ตามเรื่องห้องอบรม",
       "dueDate": "2026-10-20",
       "priority": "medium",
       "category": "งานประจำ",
-      "completed": true,
-      "done": true,
-      "notion_url": "https://app.notion.com/p/3ff16fa785cd8169b86fd9500cb64e79"
-    },
-    {
-      "id": "3ff16fa7-85cd-81b5-b608-c267f276c7fd",
-      "text": "ติดต่อร้านคอม",
-      "dueDate": "2026-10-20",
-      "priority": "medium",
-      "category": "งานประจำ",
-      "completed": true,
-      "done": true,
-      "notion_url": "https://app.notion.com/p/3ff16fa785cd81b5b608c267f276c7fd"
-    },
-    {
-      "id": "3ff16fa7-85cd-81ab-9037-f473ae5d7ec2",
-      "text": "ลบอัลบั้มรูปกลุ่มline",
-      "dueDate": "2026-10-20",
-      "priority": "medium",
-      "category": "งานประจำ",
-      "completed": true,
-      "done": true,
-      "notion_url": "https://app.notion.com/p/line-3ff16fa785cd81ab9037f473ae5d7ec2"
+      "completed": false,
+      "done": false,
+      "notion_url": "https://app.notion.com/p/3ff16fa785cd81a793cad957ccadbae0"
     },
     {
       "id": "3ff16fa7-85cd-81cb-9fda-f30cc72ecaa6",
@@ -50,6 +30,15 @@
       "calendar": "coopthaiict@gmail.com",
       "sourceType": "coop",
       "url": "https://www.google.com/calendar/event?eid=MzVmbmV2OTdvNTFoZXEzaTlxcmY0OWdhZzggY29vcHRoYWlpY3RAbQ"
+    },
+    {
+      "id": "lnndjgsd07o9np4eljo8vfjqkg",
+      "title": "ตี้น้อย",
+      "date": "2026-10-22",
+      "time": "16:30 - 18:30",
+      "calendar": "pattarapon.thongsri@gmail.com",
+      "sourceType": "primary",
+      "url": "https://www.google.com/calendar/event?eid=bG5uZGpnc2QwN285bnA0ZWxqbzh2Zmpxa2cgcGF0dGFyYXBvbi50aG9uZ3NyaUBt"
     },
     {
       "id": "fhnfmbopcgrvt0fh3tjlfpl2k4",
