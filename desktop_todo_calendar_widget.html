@@ -70,7 +70,7 @@
 <body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-slate-100 p-2 sm:p-3">
 
   <!-- Toast Notification Container -->
-  <div id="toastContainer" class="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <div id="toastContainer" class="fixed bottom-4 left-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
 
   <!-- Sleek Top Header Bar -->
   <header class="max-w-6xl mx-auto mb-2 glass-panel rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2 shadow-lg">
@@ -87,6 +87,10 @@
 
     <!-- Quick Compact Action Controls -->
     <div class="flex items-center gap-1 shrink-0">
+      <button id="btnToggleNotify" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="เปิด/ปิด การแจ้งเตือนนัดหมายและงานครบกำหนดวันนี้">
+        <span id="notifyIcon">🔔</span>
+        <span class="hidden sm:inline text-[11px]" id="notifyLabel">แจ้งเตือน</span>
+      </button>
       <button id="btnHeaderRefresh" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="ดึงข้อมูล Google Calendar สด">
         <span id="headerRefreshIcon">🔄</span>
         <span class="hidden sm:inline text-[11px]">รีเฟรช</span>
@@ -95,7 +99,7 @@
         <span id="layoutIcon">📐</span>
         <span class="hidden sm:inline text-[11px]" id="layoutLabel">ขยาย</span>
       </button>
-      <button id="btnOpenSetupModal" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="ตั้งค่าทางลัด Desktop และ Startup">
+      <button id="btnOpenSetupModal" type="button" class="p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition flex items-center gap-1" title="ตั้งค่าทางลัด Desktop และ API Key">
         <span>⚙️</span>
       </button>
     </div>
@@ -201,9 +205,43 @@
               <option value="งานประจำ">💼 งานประจำ</option>
               <option value="ประชุม">📅 ประชุม</option>
               <option value="ส่วนตัว">🏠 ส่วนตัว</option>
+              <option value="ด่วน">🔥 ด่วน</option>
             </select>
           </div>
         </form>
+
+        <!-- Search, Category Filter & Sort Controls (F11) -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-1.5 text-xs">
+          <div class="sm:col-span-6 relative flex items-center">
+            <input
+              id="todoSearchInput"
+              type="search"
+              placeholder="🔍 ค้นหางาน หรือ หมวดหมู่..."
+              aria-label="ค้นหางาน"
+              class="w-full bg-slate-900/90 text-slate-100 text-xs rounded-xl px-3 py-1.5 border border-slate-800 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+            />
+          </div>
+          <select
+            id="todoCategoryFilter"
+            aria-label="กรองตามหมวดหมู่"
+            class="sm:col-span-3 bg-slate-900/90 text-slate-200 text-xs rounded-xl px-2 py-1.5 border border-slate-800 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="all">📂 ทั้งหมด</option>
+            <option value="งานประจำ">💼 งานประจำ</option>
+            <option value="ประชุม">📅 ประชุม</option>
+            <option value="ส่วนตัว">🏠 ส่วนตัว</option>
+            <option value="ด่วน">🔥 ด่วน</option>
+          </select>
+          <select
+            id="todoSortSelect"
+            aria-label="เรียงลำดับงาน"
+            class="sm:col-span-3 bg-slate-900/90 text-slate-200 text-xs rounded-xl px-2 py-1.5 border border-slate-800 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="default">↕️ ค่าเริ่มต้น</option>
+            <option value="dueDate">📅 วันครบกำหนด</option>
+            <option value="priority">🔥 ความสำคัญ</option>
+          </select>
+        </div>
 
         <!-- Filter Pills & Clear -->
         <div class="flex items-center justify-between gap-1 text-xs">
@@ -266,6 +304,11 @@
               <span class="w-2 h-2 rounded-full bg-amber-400"></span>
               <span class="text-slate-200">สหกรณ์</span>
             </label>
+            <label class="inline-flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" id="chkCalHoliday" checked class="rounded text-rose-500 focus:ring-0" />
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+              <span class="text-slate-200">วันหยุดไทย</span>
+            </label>
           </div>
           <select id="weekViewMode" class="bg-slate-800 text-slate-300 text-[10px] rounded-lg px-2 py-1 border border-slate-700 focus:outline-none">
             <option value="rolling7" selected>7 วันจากนี้ (Rolling)</option>
@@ -284,7 +327,20 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
             <input id="evtTitle" type="text" placeholder="ชื่อกิจกรรม / นัดหมาย..." required class="sm:col-span-2 bg-slate-800 text-xs text-white rounded-lg px-3 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" />
             <input id="evtDate" type="date" required class="bg-slate-800 text-xs text-white rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" />
-            <input id="evtTime" type="text" placeholder="เช่น 09:30 - 11:00 หรือ ทั้งวัน" value="09:00 - 10:30" class="bg-slate-800 text-xs text-white rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" />
+            <input id="evtTime" type="text" placeholder="เช่น 09:00 - 10:30 หรือ ทั้งวัน" value="09:00 - 10:30" class="bg-slate-800 text-xs text-white rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500" title="รูปแบบเวลา (ซิงก์อัตโนมัติกับตัวเลือกเวลาด้านล่าง)" />
+          </div>
+          <!-- Structured Time Picker Row (F12) -->
+          <div class="flex flex-wrap items-center gap-2 bg-slate-800/60 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-200 font-medium mr-1">
+              <input id="evtAllDay" type="checkbox" class="rounded text-indigo-500 focus:ring-0 cursor-pointer" />
+              <span>ทั้งวัน (All-day)</span>
+            </label>
+            <div id="evtTimePickersWrap" class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[11px] text-slate-400">เวลาเริ่ม:</span>
+              <input id="evtStartTime" type="time" value="09:00" class="bg-slate-900 text-xs text-white rounded px-2 py-1 border border-slate-700 focus:outline-none focus:border-indigo-500" />
+              <span class="text-[11px] text-slate-400">ถึง</span>
+              <input id="evtEndTime" type="time" value="10:30" class="bg-slate-900 text-xs text-white rounded px-2 py-1 border border-slate-700 focus:outline-none focus:border-indigo-500" />
+            </div>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800">
             <div class="flex items-center gap-1.5 text-xs text-slate-300">
@@ -308,10 +364,10 @@
   </main>
 
   <!-- Setup & Help Modal -->
-  <div id="setupModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3">
+  <div id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupModalTitle" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl flex flex-col gap-3">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-        <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+        <h3 id="setupModalTitle" class="text-sm font-bold text-white flex items-center gap-1.5">
           <span>⚙️</span> การตั้งค่า & ตัวเปิดใช้งาน
         </h3>
         <button id="btnCloseSetupModal" type="button" class="text-xs text-slate-400 hover:text-white px-2 py-1">✕ ปิด</button>
@@ -319,6 +375,35 @@
       <p class="text-xs text-slate-300 leading-relaxed">
         โปรแกรมนี้ได้รับการตั้งค่าให้ซิงก์ข้อมูลกลางที่ <code class="text-indigo-300 font-mono">desktop_todo_data.json</code> และซิงก์กับ Google Calendar สดเรียบร้อยแล้ว
       </p>
+
+      <!-- Optional API Key Authentication Setting (F13) -->
+      <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <label for="apiKeyInput" class="text-xs font-semibold text-indigo-300 flex items-center gap-1">
+            <span>🔐</span> API Key สำหรับเชื่อมต่อเซิร์ฟเวอร์ (ถ้าตั้งค่าไว้)
+          </label>
+          <span id="apiKeyStatusText" class="text-[10px] text-slate-400">ไม่ได้ตั้งค่า</span>
+        </div>
+        <div class="flex gap-1.5">
+          <input
+            id="apiKeyInput"
+            type="password"
+            autocomplete="off"
+            placeholder="ใส่ WIDGET_API_KEY (เว้นว่างได้ถ้าไม่ได้ล็อก)"
+            class="flex-1 bg-slate-800/90 text-slate-100 text-xs rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-indigo-500 placeholder-slate-500"
+          />
+          <button id="btnSaveApiKey" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition shrink-0">
+            บันทึก
+          </button>
+          <button id="btnClearApiKey" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-2 py-1.5 rounded-lg border border-slate-700 transition shrink-0" title="ล้าง API Key">
+            ล้าง
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-normal">
+          ส่งค่าผ่าน Header <code class="text-indigo-300">X-API-Key</code> อัตโนมัติเมื่อมีการบันทึก/แก้ไขข้อมูล
+        </p>
+      </div>
+
       <div class="flex flex-col gap-2">
         <button id="btnPopoutCorner" type="button" class="w-full text-xs py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition text-left flex items-center justify-between">
           <span>↗️ จัดหน้าต่างให้ชิดมุมขวาบนของหน้าจอ</span>
@@ -332,10 +417,10 @@
   </div>
 
   <!-- Notion Setup & Status Modal -->
-  <div id="notionModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3">
+  <div id="notionModal" role="dialog" aria-modal="true" aria-labelledby="notionModalTitle" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl flex flex-col gap-3">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-        <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+        <h3 id="notionModalTitle" class="text-sm font-bold text-white flex items-center gap-1.5">
           <span>📝</span> เชื่อมต่อ Notion (To-Do Cloud Sync)
         </h3>
         <button id="btnCloseNotionModal" type="button" class="text-xs text-slate-400 hover:text-white px-2 py-1">✕ ปิด</button>
@@ -392,9 +477,74 @@
       } catch (e) {}
     }
 
-    // --- Shared JSON & Google Calendar Sync ---
+    // --- XSS Sanitization Helpers (F9) ---
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function safeExternalUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      const trimmed = url.trim();
+      if (/^https?:\/\//i.test(trimmed)) return trimmed;
+      return '';
+    }
+
+    // --- Optional API Key Helper & Centralized Fetch (F13 / F8) ---
+    const API_KEY_STORAGE_KEY = 'desktop_widget_api_key';
+
+    function getStoredApiKey() {
+      try {
+        return (localStorage.getItem(API_KEY_STORAGE_KEY) || '').trim();
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function setStoredApiKey(key) {
+      try {
+        const clean = (key || '').trim();
+        if (clean) {
+          localStorage.setItem(API_KEY_STORAGE_KEY, clean);
+        } else {
+          localStorage.removeItem(API_KEY_STORAGE_KEY);
+        }
+      } catch (e) {}
+    }
+
+    function getApiHeaders(extraHeaders = {}) {
+      const headers = Object.assign({}, extraHeaders || {});
+      const apiKey = getStoredApiKey();
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey;
+        if (!headers['Authorization']) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+      }
+      return headers;
+    }
+
+    // --- Shared JSON & Google Calendar Sync (F8) ---
     const SYNC_API_URL = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:18234';
-    let isLocalSaving = false;
+    let saveVersion = 0;
+    let inFlightSaveCount = 0;
+    let isSyncingOfflineEvents = false;
+    const fetchedWeekRanges = new Set();
+
+    async function apiFetch(pathOrUrl, options = {}) {
+      const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${SYNC_API_URL}${pathOrUrl}`;
+      const headers = getApiHeaders(options.headers || {});
+      const fetchOptions = Object.assign({}, options, { headers });
+      const res = await fetch(url, fetchOptions);
+      if (res.status === 401) {
+        showToast('🔒 เซิร์ฟเวอร์ต้องการ API Key ที่ถูกต้อง (ตั้งค่าได้ที่ปุ่ม ⚙️)');
+      }
+      return res;
+    }
 
     function setSyncStatusBadge(connected) {
       const badge = document.getElementById('syncBadge');
@@ -411,44 +561,208 @@
       }
     }
 
+    // --- Date Formatting Helpers ---
+    const THAI_DAYS_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+    const THAI_DAYS_FULL = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
+    const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+    function toISODate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function getTodayIso() {
+      return toISODate(new Date());
+    }
+    var todayIso = getTodayIso();
+    try { if (typeof window !== 'undefined') window.todayIso = todayIso; } catch (e) {}
+
+    function formatThaiShortDate(isoStr) {
+      if (!isoStr) return '';
+      const parts = isoStr.split('-');
+      if (parts.length !== 3) return isoStr;
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return `${THAI_DAYS_SHORT[d.getDay()]} ${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+    }
+
+    // --- Canonical Normalizers & Full-Field Diff Serializers (F8) ---
+    function normalizeTodo(t) {
+      const bothDone = !!(t && (t.done || t.completed));
+      const finalDone = (t && t.done !== undefined && t.completed !== undefined && t.done !== t.completed)
+        ? !!t.completed
+        : bothDone;
+      return {
+        id: String((t && t.id) || ('todo-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7))),
+        text: String((t && t.text) || ''),
+        dueDate: String((t && t.dueDate) !== undefined ? (t.dueDate || '') : toISODate(new Date())),
+        priority: ['high', 'medium', 'low'].includes(t && t.priority) ? t.priority : 'medium',
+        category: String((t && t.category) || 'งานประจำ'),
+        completed: finalDone,
+        done: finalDone,
+        notion_url: safeExternalUrl((t && t.notion_url) || '')
+      };
+    }
+
+    function serializeTodosForDiff(todoList) {
+      if (!Array.isArray(todoList)) return '[]';
+      return JSON.stringify(todoList.map(t => {
+        const isDone = !!(t.done || t.completed);
+        return {
+          id: String(t.id || ''),
+          text: String(t.text || ''),
+          done: isDone,
+          dueDate: String(t.dueDate || ''),
+          priority: String(t.priority || 'medium'),
+          category: String(t.category || 'งานประจำ'),
+          notion_url: String(t.notion_url || '')
+        };
+      }));
+    }
+
+    function normalizeEvent(e) {
+      const link = safeExternalUrl((e && (e.htmlLink || e.url)) || '');
+      const cal = String((e && e.calendar) || '');
+      let srcType = String((e && e.sourceType) || '');
+      if (!srcType) {
+        srcType = cal.includes('coop') ? 'coop' : cal.includes('holiday') ? 'holiday' : 'primary';
+      }
+      return {
+        id: String((e && e.id) || ('evt-' + Date.now())),
+        title: String((e && e.title) || ''),
+        date: String((e && e.date) || ''),
+        time: String((e && e.time) || 'ทั้งวัน'),
+        calendar: cal,
+        sourceType: srcType,
+        htmlLink: link,
+        url: link
+      };
+    }
+
+    function serializeEventsForDiff(eventList) {
+      if (!Array.isArray(eventList)) return '[]';
+      return JSON.stringify(eventList.map(e => ({
+        id: String(e.id || ''),
+        title: String(e.title || ''),
+        date: String(e.date || ''),
+        time: String(e.time || ''),
+        calendar: String(e.calendar || ''),
+        sourceType: String(e.sourceType || ''),
+        htmlLink: String(e.htmlLink || e.url || '')
+      })));
+    }
+
+    function mergeCalendarEventsForRange(existingEvents, fetchedEvents, startIso, daysCount = 7) {
+      const normalizedFetched = (Array.isArray(fetchedEvents) ? fetchedEvents : []).map(normalizeEvent);
+      const parts = startIso.split('-').map(Number);
+      const startDt = new Date(parts[0], parts[1] - 1, parts[2]);
+      const endDt = new Date(startDt.getFullYear(), startDt.getMonth(), startDt.getDate() + (daysCount - 1));
+      const endIso = toISODate(endDt);
+
+      const fetchedIds = new Set(normalizedFetched.map(ev => ev.id).filter(Boolean));
+      const fetchedSignatures = new Set(normalizedFetched.map(ev => (ev.title || '') + '|' + (ev.date || '') + '|' + (ev.time || '')));
+
+      const retained = (Array.isArray(existingEvents) ? existingEvents : []).filter(ev => {
+        if (!ev) return false;
+        const isCustom = String(ev.id || '').startsWith('custom-') || ev.sourceType === 'custom';
+        if (isCustom && !fetchedIds.has(ev.id) && !fetchedSignatures.has((ev.title || '') + '|' + (ev.date || '') + '|' + (ev.time || ''))) {
+          return true;
+        }
+        if (fetchedIds.has(ev.id)) return false;
+        if (!ev.date) return false;
+        return ev.date < startIso || ev.date > endIso;
+      }).map(normalizeEvent);
+
+      const combined = [...retained, ...normalizedFetched];
+      combined.sort((a, b) => {
+        const da = a.date || '';
+        const db = b.date || '';
+        if (da !== db) return da.localeCompare(db);
+        const ta = a.time === 'ทั้งวัน' ? '00:00' : (a.time || '');
+        const tb = b.time === 'ทั้งวัน' ? '00:00' : (b.time || '');
+        return ta.localeCompare(tb);
+      });
+      return combined;
+    }
+
+    // --- State Initialization ---
+    var todos = loadStorage('desktop_widget_todos_v1', []).map(normalizeTodo);
+    var calendarEvents = loadStorage('desktop_widget_events_v1', []).map(normalizeEvent);
+    var currentFilter = 'all';
+    var currentTodoFilter = 'all';
+    try { if (typeof window !== 'undefined') { window.currentFilter = currentFilter; window.currentTodoFilter = currentTodoFilter; } } catch (e) {}
+    let currentSearchQuery = '';
+    let currentCategoryFilter = 'all';
+    let currentSortBy = 'default';
+    let editingTodoId = null;
+    let editingTodoDraft = null;
+    let currentTab = 'todo'; // 'todo' | 'calendar' | 'dual'
+    let isCompactCorner = false;
+
+    function getSystemToday() {
+      return new Date();
+    }
+    let currentAnchorDate = getSystemToday();
+
+    // --- Sync Engine Functions (F8) ---
     async function syncFetchData() {
+      const fetchVersion = saveVersion;
       try {
-        const res = await fetch(`${SYNC_API_URL}/api/data`, { cache: 'no-store' });
+        const res = await apiFetch('/api/data', { cache: 'no-store' });
         if (!res.ok) throw new Error('API error');
         const data = await res.json();
         setSyncStatusBadge(true);
 
-        if (data && Array.isArray(data.todos) && !isLocalSaving) {
-          const normalized = data.todos.map(t => {
-            const done = !!(t.done || t.completed);
-            return {
-              id: t.id || 'todo-' + Math.random(),
-              text: t.text || '',
-              dueDate: t.dueDate || toISODate(new Date()),
-              priority: t.priority || 'medium',
-              category: t.category || 'งานประจำ',
-              completed: done,
-              done: done
-            };
-          });
-
-          const currentJson = JSON.stringify(todos.map(t => ({ id: t.id, text: t.text, done: !!(t.done || t.completed) })));
-          const remoteJson = JSON.stringify(normalized.map(t => ({ id: t.id, text: t.text, done: !!(t.done || t.completed) })));
+        if (data && Array.isArray(data.todos) && inFlightSaveCount === 0 && saveVersion === fetchVersion) {
+          const normalized = data.todos.map(normalizeTodo);
+          const currentJson = serializeTodosForDiff(todos);
+          const remoteJson = serializeTodosForDiff(normalized);
           if (currentJson !== remoteJson) {
             todos = normalized;
             saveStorage('desktop_widget_todos_v1', todos);
-            renderTodos();
+            if (editingTodoId === null) {
+              renderTodos();
+            }
             renderWeekCalendar();
           }
         }
 
-        if (data && Array.isArray(data.events) && data.events.length > 0) {
-          const currentEventsJson = JSON.stringify(calendarEvents.map(e => e.id));
-          const remoteEventsJson = JSON.stringify(data.events.map(e => e.id));
-          if (currentEventsJson !== remoteEventsJson) {
-            calendarEvents = data.events;
+        if (data && Array.isArray(data.events)) {
+          const remoteEvents = data.events.map(normalizeEvent);
+          const remoteIds = new Set(remoteEvents.map(e => e.id));
+          const remoteSignatures = new Set(remoteEvents.map(e => (e.title || '') + '|' + (e.date || '') + '|' + (e.time || '')));
+
+          const unsyncedCustomEvents = calendarEvents
+            .filter(e => String(e.id || '').startsWith('custom-') && !remoteIds.has(e.id) && !remoteSignatures.has((e.title || '') + '|' + (e.date || '') + '|' + (e.time || '')))
+            .map(normalizeEvent);
+
+          let mergedEvents;
+          if (fetchedWeekRanges.size > 0) {
+            mergedEvents = mergeCalendarEventsForRange(calendarEvents, remoteEvents, getTodayIso(), 7);
+          } else {
+            mergedEvents = [...remoteEvents, ...unsyncedCustomEvents];
+          }
+
+          const currentEventsJson = serializeEventsForDiff(calendarEvents);
+          const mergedEventsJson = serializeEventsForDiff(mergedEvents);
+
+          if (currentEventsJson !== mergedEventsJson) {
+            calendarEvents = mergedEvents;
             saveStorage('desktop_widget_events_v1', calendarEvents);
             renderWeekCalendar();
+          }
+
+          if (unsyncedCustomEvents.length > 0 && !isSyncingOfflineEvents) {
+            isSyncingOfflineEvents = true;
+            apiFetch('/api/events', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(mergedEvents)
+            }).catch(() => {}).finally(() => {
+              isSyncingOfflineEvents = false;
+            });
           }
         }
       } catch (err) {
@@ -456,48 +770,190 @@
       }
     }
 
-    async function syncFetchCalendar(notify = false) {
+    async function syncFetchCalendar(notify = false, startDateIso = null) {
+      const targetStartIso = startDateIso || getActiveWeekStartIso();
+      if (startDateIso && startDateIso !== getTodayIso()) {
+        fetchedWeekRanges.add(startDateIso);
+      }
       try {
-        const res = await fetch(`${SYNC_API_URL}/api/calendar/events`, { cache: 'no-store' });
+        const query = `?start=${encodeURIComponent(targetStartIso)}&days=7`;
+        const res = await apiFetch(`/api/calendar/events${query}`, { cache: 'no-store' });
         if (!res.ok) throw new Error('Calendar API error');
         const liveEvents = await res.json();
         if (Array.isArray(liveEvents)) {
-          calendarEvents = liveEvents;
+          calendarEvents = mergeCalendarEventsForRange(calendarEvents, liveEvents, targetStartIso, 7);
           saveStorage('desktop_widget_events_v1', calendarEvents);
           setSyncStatusBadge(true);
           renderWeekCalendar();
           if (notify) showToast(`✅ ดึงนัดหมายสดจาก Google Calendar สำเร็จ (${liveEvents.length} กิจกรรม)`);
         }
       } catch (err) {
+        renderWeekCalendar();
         if (notify) showToast('⚠️ กำลังใช้ข้อมูลแคช (กำลังรอรอบซิงก์ Google Calendar ถัดไป)');
       }
     }
 
-    async function syncSaveTodos(newTodos) {
-      todos = newTodos.map(t => {
-        const done = !!(t.completed || t.done);
-        return { ...t, completed: done, done: done };
+    function reconcileServerTodos(serverTodos, expectedSaveVersion) {
+      if (!Array.isArray(serverTodos)) return;
+      const normalizedServer = serverTodos.map(normalizeTodo);
+
+      if (saveVersion === expectedSaveVersion) {
+        if (serializeTodosForDiff(todos) !== serializeTodosForDiff(normalizedServer)) {
+          todos = normalizedServer;
+          saveStorage('desktop_widget_todos_v1', todos);
+          if (editingTodoId === null) {
+            renderTodos();
+          }
+          renderWeekCalendar();
+        }
+        return;
+      }
+
+      let updatedInPlace = false;
+      const usedServerIds = new Set(todos.map(t => t.id));
+      todos.forEach(localItem => {
+        if (String(localItem.id || '').startsWith('todo-') || !localItem.notion_url) {
+          const match = normalizedServer.find(st =>
+            (st.id === localItem.id) ||
+            (!usedServerIds.has(st.id) &&
+             !String(st.id).startsWith('todo-') &&
+             st.text === localItem.text &&
+             st.dueDate === localItem.dueDate &&
+             st.category === localItem.category)
+          );
+          if (match) {
+            if (String(localItem.id).startsWith('todo-') && !String(match.id).startsWith('todo-')) {
+              usedServerIds.add(match.id);
+              localItem.id = match.id;
+              updatedInPlace = true;
+            }
+            if (!localItem.notion_url && match.notion_url) {
+              localItem.notion_url = match.notion_url;
+              updatedInPlace = true;
+            }
+          }
+        }
       });
+      if (updatedInPlace) {
+        saveStorage('desktop_widget_todos_v1', todos);
+        if (editingTodoId === null) {
+          renderTodos();
+        }
+      }
+    }
+
+    async function syncSaveTodos(newTodos) {
+      const currentSaveVersion = ++saveVersion;
+      inFlightSaveCount++;
+      todos = newTodos.map(normalizeTodo);
       saveStorage('desktop_widget_todos_v1', todos);
-      isLocalSaving = true;
       try {
-        await fetch(`${SYNC_API_URL}/api/todos`, {
+        const res = await apiFetch('/api/todos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(todos)
         });
+        if (!res.ok) throw new Error('Save todos error');
         setSyncStatusBadge(true);
+        try {
+          const resData = await res.json();
+          if (resData && Array.isArray(resData.todos) && (resData.todos.length > 0 || todos.length === 0)) {
+            reconcileServerTodos(resData.todos, currentSaveVersion);
+          }
+        } catch (parseErr) {}
       } catch (e) {
         setSyncStatusBadge(false);
       } finally {
-        setTimeout(() => { isLocalSaving = false; }, 350);
+        inFlightSaveCount = Math.max(0, inFlightSaveCount - 1);
       }
     }
 
-    // --- Notion Integration Engine ---
+    async function syncPatchTodo(todoId, patchFields) {
+      const currentSaveVersion = ++saveVersion;
+      inFlightSaveCount++;
+      todos = todos.map(t => {
+        if (t.id !== todoId) return normalizeTodo(t);
+        const merged = Object.assign({}, t, patchFields);
+        if (patchFields.completed !== undefined) merged.done = !!patchFields.completed;
+        if (patchFields.done !== undefined) merged.completed = !!patchFields.done;
+        return normalizeTodo(merged);
+      });
+      saveStorage('desktop_widget_todos_v1', todos);
+      try {
+        const res = await apiFetch(`/api/todos/${encodeURIComponent(todoId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patchFields)
+        });
+        if (res.status === 404) {
+          const fallbackRes = await apiFetch('/api/todos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(todos)
+          });
+          if (fallbackRes.ok) {
+            setSyncStatusBadge(true);
+            const fbData = await fallbackRes.json().catch(() => null);
+            if (fbData && Array.isArray(fbData.todos) && (fbData.todos.length > 0 || todos.length === 0)) {
+              reconcileServerTodos(fbData.todos, currentSaveVersion);
+            }
+          }
+        } else if (res.ok) {
+          setSyncStatusBadge(true);
+          const resData = await res.json().catch(() => null);
+          if (resData && Array.isArray(resData.todos) && (resData.todos.length > 0 || todos.length === 0)) {
+            reconcileServerTodos(resData.todos, currentSaveVersion);
+          }
+        } else {
+          throw new Error('Patch failed');
+        }
+      } catch (e) {
+        setSyncStatusBadge(false);
+      } finally {
+        inFlightSaveCount = Math.max(0, inFlightSaveCount - 1);
+      }
+    }
+
+    async function syncDeleteTodo(todoId) {
+      const currentSaveVersion = ++saveVersion;
+      inFlightSaveCount++;
+      todos = todos.filter(t => t.id !== todoId).map(normalizeTodo);
+      saveStorage('desktop_widget_todos_v1', todos);
+      try {
+        const res = await apiFetch(`/api/todos/${encodeURIComponent(todoId)}`, {
+          method: 'DELETE'
+        });
+        if (res.status === 404) {
+          const fallbackRes = await apiFetch('/api/todos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(todos)
+          });
+          if (fallbackRes.ok) {
+            setSyncStatusBadge(true);
+            const fbData = await fallbackRes.json().catch(() => null);
+            if (fbData && Array.isArray(fbData.todos)) {
+              reconcileServerTodos(fbData.todos, currentSaveVersion);
+            }
+          }
+        } else if (res.ok) {
+          setSyncStatusBadge(true);
+          const resData = await res.json().catch(() => null);
+          if (resData && Array.isArray(resData.todos)) {
+            reconcileServerTodos(resData.todos, currentSaveVersion);
+          }
+        }
+      } catch (e) {
+        setSyncStatusBadge(false);
+      } finally {
+        inFlightSaveCount = Math.max(0, inFlightSaveCount - 1);
+      }
+    }
+
+    // --- Notion Integration Engine (F8 + F9 XSS-Safe) ---
     async function checkNotionStatus() {
       try {
-        const res = await fetch(`${SYNC_API_URL}/api/notion/status`, { cache: 'no-store' });
+        const res = await apiFetch('/api/notion/status', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         const dot = document.getElementById('notionStatusDot');
@@ -513,10 +969,25 @@
             text.textContent = 'Notion เชื่อมแล้ว';
           }
           if (modalStatus) {
-            modalStatus.innerHTML = '<span class="text-emerald-400 font-semibold flex items-center gap-1.5">🟢 เชื่อมต่อกับ Notion Database สำเร็จแล้ว</span>';
+            modalStatus.textContent = '';
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'text-emerald-400 font-semibold flex items-center gap-1.5';
+            statusSpan.textContent = '🟢 เชื่อมต่อกับ Notion Database สำเร็จแล้ว';
+            modalStatus.appendChild(statusSpan);
           }
           if (modalInfo) {
-            modalInfo.innerHTML = `Workspace: <span class="text-white">${data.workspace || 'Notion'}</span> | Database ID: <code class="text-indigo-300 font-mono text-[10px]">${data.database_id}</code>`;
+            modalInfo.textContent = '';
+            modalInfo.appendChild(document.createTextNode('Workspace: '));
+            const wsSpan = document.createElement('span');
+            wsSpan.className = 'text-white';
+            wsSpan.textContent = data.workspace || 'Notion';
+            modalInfo.appendChild(wsSpan);
+
+            modalInfo.appendChild(document.createTextNode(' | Database ID: '));
+            const dbCode = document.createElement('code');
+            dbCode.className = 'text-indigo-300 font-mono text-[10px]';
+            dbCode.textContent = data.database_id;
+            modalInfo.appendChild(dbCode);
           }
         } else {
           if (dot) {
@@ -526,10 +997,25 @@
             text.textContent = 'เชื่อม Notion';
           }
           if (modalStatus) {
-            modalStatus.innerHTML = '<span class="text-amber-400 font-semibold flex items-center gap-1.5">🟡 พร้อมเชื่อมต่อ (รอแชร์หน้าใน Notion)</span>';
+            modalStatus.textContent = '';
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'text-amber-400 font-semibold flex items-center gap-1.5';
+            statusSpan.textContent = '🟡 พร้อมเชื่อมต่อ (รอแชร์หน้าใน Notion)';
+            modalStatus.appendChild(statusSpan);
           }
           if (modalInfo) {
-            modalInfo.innerHTML = `บอท: <strong class="text-emerald-300">ICT</strong> | Workspace: <strong class="text-white">${data.workspace || 'pattarapon thongsri’s Space'}</strong>`;
+            modalInfo.textContent = '';
+            modalInfo.appendChild(document.createTextNode('บอท: '));
+            const botStrong = document.createElement('strong');
+            botStrong.className = 'text-emerald-300';
+            botStrong.textContent = data.bot_name || 'ICT';
+            modalInfo.appendChild(botStrong);
+
+            modalInfo.appendChild(document.createTextNode(' | Workspace: '));
+            const wsStrong = document.createElement('strong');
+            wsStrong.className = 'text-white';
+            wsStrong.textContent = data.workspace || 'pattarapon thongsri’s Space';
+            modalInfo.appendChild(wsStrong);
           }
         }
       } catch (e) {
@@ -540,17 +1026,18 @@
     async function triggerNotionSync(notify = true) {
       const icon = document.getElementById('notionSyncIcon');
       if (icon) icon.classList.add('animate-spin');
+      const syncVer = ++saveVersion;
+      inFlightSaveCount++;
       try {
-        const res = await fetch(`${SYNC_API_URL}/api/notion/sync`, { method: 'POST' });
+        const res = await apiFetch('/api/notion/sync', { method: 'POST' });
         if (!res.ok) throw new Error('Sync error');
         const data = await res.json();
-        if (data.todos && Array.isArray(data.todos)) {
-          todos = data.todos.map(t => {
-            const done = !!(t.completed || t.done);
-            return { ...t, completed: done, done: done };
-          });
+        if (data.todos && Array.isArray(data.todos) && saveVersion === syncVer) {
+          todos = data.todos.map(normalizeTodo);
           saveStorage('desktop_widget_todos_v1', todos);
-          renderTodos();
+          if (editingTodoId === null) {
+            renderTodos();
+          }
           renderWeekCalendar();
           checkNotionStatus();
           if (notify) showToast(`✅ ซิงก์ข้อมูล Notion สำเร็จ (${todos.length} รายการ)`);
@@ -558,18 +1045,22 @@
       } catch (e) {
         if (notify) showToast('⚠️ ซิงก์ Notion ไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ');
       } finally {
+        inFlightSaveCount = Math.max(0, inFlightSaveCount - 1);
         if (icon) icon.classList.remove('animate-spin');
       }
     }
 
     async function triggerNotionAutoConnect() {
       const btn = document.getElementById('btnNotionAutoDetect');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<span>⏳</span> กำลังตรวจหาหน้าหรือตารางใน Notion...';
-      btn.disabled = true;
+      if (btn) {
+        btn.textContent = '⏳ กำลังตรวจหาหน้าหรือตารางใน Notion...';
+        btn.disabled = true;
+      }
+      const connectVer = ++saveVersion;
+      inFlightSaveCount++;
 
       try {
-        const res = await fetch(`${SYNC_API_URL}/api/notion/connect`, {
+        const res = await apiFetch('/api/notion/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -582,41 +1073,34 @@
 
         showToast('🎉 เชื่อมต่อ Notion สำเร็จ! งาน To-Do ซิงก์ขึ้น Notion แล้ว');
         checkNotionStatus();
-        if (data.todos && Array.isArray(data.todos)) {
-          todos = data.todos.map(t => {
-            const done = !!(t.completed || t.done);
-            return { ...t, completed: done, done: done };
-          });
+        if (data.todos && Array.isArray(data.todos) && saveVersion === connectVer) {
+          todos = data.todos.map(normalizeTodo);
           saveStorage('desktop_widget_todos_v1', todos);
-          renderTodos();
+          if (editingTodoId === null) {
+            renderTodos();
+          }
           renderWeekCalendar();
         }
         const modal = document.getElementById('notionModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        if (modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
       } catch (e) {
         alert('เกิดข้อผิดพลาดในการเชื่อมต่อ Notion: ' + e.message);
       } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        inFlightSaveCount = Math.max(0, inFlightSaveCount - 1);
+        if (btn) {
+          btn.textContent = '🔍 ตรวจหาและเชื่อมต่ออัตโนมัติ (Auto-Detect)';
+          btn.disabled = false;
+        }
       }
     }
-
-    // --- State Initialization ---
-    let todos = loadStorage('desktop_widget_todos_v1', []);
-    let calendarEvents = loadStorage('desktop_widget_events_v1', []);
-    let currentFilter = 'all';
-    let currentTab = 'todo'; // 'todo' | 'calendar' | 'dual'
-    let isCompactCorner = false;
-
-    function getSystemToday() {
-      return new Date();
-    }
-    let currentAnchorDate = getSystemToday();
 
     // --- Toast Notification ---
     function showToast(msg) {
       const container = document.getElementById('toastContainer');
+      if (!container) return;
       const item = document.createElement('div');
       item.className = 'bg-slate-900/95 border border-indigo-500/50 text-slate-100 text-xs px-3.5 py-2 rounded-xl shadow-2xl transition-all';
       item.textContent = msg;
@@ -625,27 +1109,6 @@
         item.style.opacity = '0';
         setTimeout(() => item.remove(), 300);
       }, 2600);
-    }
-
-    // --- Date Formatting Helpers ---
-    const THAI_DAYS_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-    const THAI_DAYS_FULL = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
-    const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-    const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-
-    function toISODate(d) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    }
-
-    function formatThaiShortDate(isoStr) {
-      if (!isoStr) return '';
-      const parts = isoStr.split('-');
-      if (parts.length !== 3) return isoStr;
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return `${THAI_DAYS_SHORT[d.getDay()]} ${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
     }
 
     // --- Live Clock & Real Date ---
@@ -699,10 +1162,98 @@
     tabBtnCalendar.addEventListener('click', () => setTab('calendar'));
     tabBtnDual.addEventListener('click', () => setTab('dual'));
 
-    // --- Render To-Do List ---
+    // --- Inline Task Editing & Rendering (F10 & F11) ---
+    const PRIORITY_WEIGHT = { high: 1, medium: 2, low: 3 };
+
+    function openEditTodo(id) {
+      const target = todos.find(t => t.id === id);
+      if (!target) return;
+      editingTodoId = id;
+      editingTodoDraft = {
+        text: target.text || '',
+        dueDate: target.dueDate || getTodayIso(),
+        priority: target.priority || 'medium',
+        category: target.category || 'งานประจำ'
+      };
+      renderTodos();
+      const inputEl = document.getElementById('editTodoText');
+      if (inputEl) {
+        inputEl.value = target.text || '';
+        inputEl.focus();
+        inputEl.select();
+      }
+    }
+
+    function cancelEditTodo() {
+      if (editingTodoId === null) return;
+      editingTodoId = null;
+      editingTodoDraft = null;
+      renderTodos();
+    }
+
+    function saveEditTodo(id) {
+      const target = todos.find(t => t.id === id);
+      if (!target) {
+        cancelEditTodo();
+        return;
+      }
+      const textInput = document.getElementById('editTodoText');
+      const dateInput = document.getElementById('editTodoDueDate');
+      const prioSelect = document.getElementById('editTodoPriority');
+      const catSelect = document.getElementById('editTodoCategory');
+
+      const newText = (textInput ? textInput.value : (editingTodoDraft?.text ?? target.text)).trim();
+      if (!newText) {
+        showToast('⚠️ กรุณาระบุชื่องาน');
+        if (textInput) textInput.focus();
+        return;
+      }
+      const newDueDate = (dateInput ? dateInput.value : (editingTodoDraft?.dueDate ?? target.dueDate)) || getTodayIso();
+      const newPriority = (prioSelect ? prioSelect.value : (editingTodoDraft?.priority ?? target.priority)) || 'medium';
+      const newCategory = (catSelect ? catSelect.value : (editingTodoDraft?.category ?? target.category)) || 'งานประจำ';
+
+      target.text = newText;
+      target.dueDate = newDueDate;
+      target.priority = newPriority;
+      target.category = newCategory;
+
+      editingTodoId = null;
+      editingTodoDraft = null;
+
+      saveStorage('desktop_widget_todos_v1', todos);
+      renderTodos();
+      renderWeekCalendar();
+      syncPatchTodo(id, {
+        text: newText,
+        dueDate: newDueDate,
+        priority: newPriority,
+        category: newCategory,
+        completed: !!target.completed,
+        done: !!target.completed
+      });
+      showToast('✏️ บันทึกการแก้ไขรายการแล้ว');
+    }
+
+    function saveEditedTodo(id) {
+      return saveEditTodo(id || editingTodoId);
+    }
+
+    async function updateTodoItem(id, fields) {
+      const target = todos.find(t => t.id === id);
+      if (!target) return;
+      Object.assign(target, fields);
+      if (fields.completed !== undefined) target.done = fields.completed;
+      if (fields.done !== undefined) target.completed = fields.done;
+      saveStorage('desktop_widget_todos_v1', todos);
+      renderTodos();
+      renderWeekCalendar();
+      return syncPatchTodo(id, fields);
+    }
+
     function renderTodos() {
       const listEl = document.getElementById('todoListContainer');
-      listEl.innerHTML = '';
+      if (!listEl) return;
+      listEl.textContent = '';
 
       const totalCount = todos.length;
       const doneCount = todos.filter(t => t.completed).length;
@@ -712,16 +1263,57 @@
       document.getElementById('todoProgressBar').style.width = `${pct}%`;
       document.getElementById('tabTodoCount').textContent = totalCount;
 
+      const searchEl = document.getElementById('todoSearchInput');
+      const catFilterEl = document.getElementById('todoCategoryFilter');
+      const sortEl = document.getElementById('todoSortSelect');
+
+      const searchQuery = (searchEl ? searchEl.value : currentSearchQuery).trim().toLowerCase();
+      const categoryFilter = catFilterEl ? catFilterEl.value : currentCategoryFilter;
+      const sortBy = sortEl ? sortEl.value : currentSortBy;
+
+      const effectiveFilter = (typeof currentTodoFilter !== 'undefined' && currentTodoFilter !== 'all')
+        ? currentTodoFilter
+        : currentFilter;
+
       const filtered = todos.filter(t => {
-        if (currentFilter === 'active') return !t.completed;
-        if (currentFilter === 'done') return t.completed;
+        if (effectiveFilter === 'active' && t.completed) return false;
+        if (effectiveFilter === 'done' && !t.completed) return false;
+        if (categoryFilter && categoryFilter !== 'all' && (t.category || '') !== categoryFilter) {
+          return false;
+        }
+        if (searchQuery) {
+          const textMatch = String(t.text || '').toLowerCase().includes(searchQuery);
+          const catMatch = String(t.category || '').toLowerCase().includes(searchQuery);
+          if (!textMatch && !catMatch) return false;
+        }
         return true;
       });
 
-      if (filtered.length === 0) {
+      const sorted = [...filtered];
+      if (sortBy === 'dueDate') {
+        sorted.sort((a, b) => {
+          const da = a.dueDate ? String(a.dueDate) : '9999-99-99';
+          const db = b.dueDate ? String(b.dueDate) : '9999-99-99';
+          if (da !== db) return da.localeCompare(db);
+          return (PRIORITY_WEIGHT[a.priority] || 2) - (PRIORITY_WEIGHT[b.priority] || 2);
+        });
+      } else if (sortBy === 'priority') {
+        sorted.sort((a, b) => {
+          const pa = PRIORITY_WEIGHT[a.priority] || 2;
+          const pb = PRIORITY_WEIGHT[b.priority] || 2;
+          if (pa !== pb) return pa - pb;
+          const da = a.dueDate ? String(a.dueDate) : '9999-99-99';
+          const db = b.dueDate ? String(b.dueDate) : '9999-99-99';
+          return da.localeCompare(db);
+        });
+      }
+
+      if (sorted.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'text-center py-6 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl';
-        empty.textContent = 'ไม่มีรายการงาน เพิ่มงานใหม่ด้านบนได้เลย';
+        empty.textContent = todos.length === 0
+          ? 'ไม่มีรายการงาน เพิ่มงานใหม่ด้านบนได้เลย'
+          : 'ไม่พบรายการงานที่ตรงกับตัวกรองหรือคำค้นหา';
         listEl.appendChild(empty);
         return;
       }
@@ -732,9 +1324,135 @@
         low: { label: 'ทั่วไป', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' }
       };
 
-      filtered.forEach(item => {
+      const todayIso = getTodayIso();
+
+      sorted.forEach(item => {
+        const isOverdue = !item.completed && !!item.dueDate && item.dueDate < todayIso;
         const card = document.createElement('div');
-        card.className = `glass-card rounded-xl p-2.5 flex items-start justify-between gap-2 ${item.completed ? 'opacity-60' : ''}`;
+        card.className = `glass-card rounded-xl p-2.5 flex flex-col gap-2 ${
+          item.completed ? 'opacity-60' : isOverdue ? 'border-rose-500/40' : ''
+        }`;
+        card.setAttribute('data-todo-id', item.id);
+
+        if (editingTodoId === item.id) {
+          const draft = editingTodoDraft || {
+            text: item.text || '',
+            dueDate: item.dueDate || todayIso,
+            priority: item.priority || 'medium',
+            category: item.category || 'งานประจำ'
+          };
+
+          const editForm = document.createElement('form');
+          editForm.id = 'editTodoForm';
+          editForm.className = 'todo-edit-form flex flex-col gap-2 w-full';
+          editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveEditTodo(item.id);
+          });
+
+          const textInput = document.createElement('input');
+          textInput.id = 'editTodoText';
+          textInput.type = 'text';
+          textInput.required = true;
+          textInput.value = draft.text;
+          textInput.placeholder = 'ชื่องาน...';
+          textInput.className = 'todo-edit-text w-full bg-slate-900 text-slate-100 text-xs sm:text-sm rounded-lg px-2.5 py-1.5 border border-indigo-500/70 focus:outline-none focus:border-indigo-400';
+          textInput.addEventListener('input', () => {
+            if (editingTodoDraft) editingTodoDraft.text = textInput.value;
+          });
+          textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              cancelEditTodo();
+            }
+          });
+
+          const metaGrid = document.createElement('div');
+          metaGrid.className = 'grid grid-cols-3 gap-1.5';
+
+          const dateInput = document.createElement('input');
+          dateInput.id = 'editTodoDueDate';
+          dateInput.type = 'date';
+          dateInput.value = draft.dueDate;
+          dateInput.className = 'todo-edit-date bg-slate-900 text-slate-200 text-xs rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-indigo-500';
+          dateInput.addEventListener('change', () => {
+            if (editingTodoDraft) editingTodoDraft.dueDate = dateInput.value;
+          });
+
+          const prioSelect = document.createElement('select');
+          prioSelect.id = 'editTodoPriority';
+          prioSelect.className = 'todo-edit-priority bg-slate-900 text-slate-200 text-xs rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-indigo-500';
+          [
+            { value: 'high', label: '🔴 สำคัญมาก' },
+            { value: 'medium', label: '🟡 ปานกลาง' },
+            { value: 'low', label: '🟢 ทั่วไป' }
+          ].forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt.value;
+            o.textContent = opt.label;
+            if (draft.priority === opt.value) o.selected = true;
+            prioSelect.appendChild(o);
+          });
+          prioSelect.addEventListener('change', () => {
+            if (editingTodoDraft) editingTodoDraft.priority = prioSelect.value;
+          });
+
+          const catSelect = document.createElement('select');
+          catSelect.id = 'editTodoCategory';
+          catSelect.className = 'todo-edit-category bg-slate-900 text-slate-200 text-xs rounded-lg px-2 py-1 border border-slate-700 focus:outline-none focus:border-indigo-500';
+          const categories = [
+            { value: 'งานประจำ', label: '💼 งานประจำ' },
+            { value: 'ประชุม', label: '📅 ประชุม' },
+            { value: 'ส่วนตัว', label: '🏠 ส่วนตัว' },
+            { value: 'ด่วน', label: '🔥 ด่วน' }
+          ];
+          if (draft.category && !categories.some(c => c.value === draft.category)) {
+            categories.push({ value: draft.category, label: draft.category });
+          }
+          categories.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt.value;
+            o.textContent = opt.label;
+            if (draft.category === opt.value) o.selected = true;
+            catSelect.appendChild(o);
+          });
+          catSelect.addEventListener('change', () => {
+            if (editingTodoDraft) editingTodoDraft.category = catSelect.value;
+          });
+
+          metaGrid.appendChild(dateInput);
+          metaGrid.appendChild(prioSelect);
+          metaGrid.appendChild(catSelect);
+
+          const btnRow = document.createElement('div');
+          btnRow.className = 'flex items-center justify-end gap-1.5 pt-0.5';
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.id = 'btnCancelEditTodo';
+          cancelBtn.type = 'button';
+          cancelBtn.className = 'todo-edit-cancel-btn text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition';
+          cancelBtn.textContent = 'ยกเลิก';
+          cancelBtn.addEventListener('click', cancelEditTodo);
+
+          const saveBtn = document.createElement('button');
+          saveBtn.id = 'btnSaveEditTodo';
+          saveBtn.type = 'submit';
+          saveBtn.className = 'todo-edit-save-btn text-xs px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition shadow-sm';
+          saveBtn.textContent = '💾 บันทึก';
+
+          btnRow.appendChild(cancelBtn);
+          btnRow.appendChild(saveBtn);
+
+          editForm.appendChild(textInput);
+          editForm.appendChild(metaGrid);
+          editForm.appendChild(btnRow);
+          card.appendChild(editForm);
+          listEl.appendChild(card);
+          return;
+        }
+
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-start justify-between gap-2';
 
         const left = document.createElement('div');
         left.className = 'flex items-start gap-2 flex-1 min-w-0';
@@ -746,7 +1464,7 @@
         chk.addEventListener('change', () => {
           item.completed = chk.checked;
           item.done = chk.checked;
-          syncSaveTodos(todos);
+          syncPatchTodo(item.id, { completed: chk.checked, done: chk.checked });
           renderTodos();
           renderWeekCalendar();
         });
@@ -757,6 +1475,8 @@
         const title = document.createElement('div');
         title.className = `text-xs sm:text-sm font-medium break-words ${item.completed ? 'line-through text-slate-400' : 'text-slate-100'}`;
         title.textContent = item.text;
+        title.title = 'ดับเบิลคลิกเพื่อแก้ไข';
+        title.addEventListener('dblclick', () => openEditTodo(item.id));
 
         const meta = document.createElement('div');
         meta.className = 'flex flex-wrap items-center gap-1.5 mt-1';
@@ -769,18 +1489,40 @@
 
         if (item.category) {
           const cSpan = document.createElement('span');
-          cSpan.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+          const isUrgentCat = item.category === 'ด่วน';
+          cSpan.className = isUrgentCat
+            ? 'text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-medium'
+            : 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
           cSpan.textContent = item.category;
           meta.appendChild(cSpan);
         }
 
         if (item.dueDate) {
           const dSpan = document.createElement('span');
-          const todayIso = toISODate(new Date());
           const isToday = item.dueDate === todayIso;
-          dSpan.className = `text-[10px] px-2 py-0.5 rounded-full ${isToday ? 'bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-semibold' : 'text-slate-400'}`;
-          dSpan.textContent = `📅 ${isToday ? 'วันนี้ (' + formatThaiShortDate(item.dueDate) + ')' : formatThaiShortDate(item.dueDate)}`;
+          if (isOverdue) {
+            dSpan.className = 'todo-overdue-badge text-[10px] px-2 py-0.5 rounded-full bg-rose-500/25 text-rose-300 border border-rose-500/40 font-semibold';
+            dSpan.textContent = `⚠️ เลยกำหนด (${formatThaiShortDate(item.dueDate)})`;
+          } else if (isToday) {
+            dSpan.className = 'text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-semibold';
+            dSpan.textContent = `📅 วันนี้ (${formatThaiShortDate(item.dueDate)})`;
+          } else {
+            dSpan.className = 'text-[10px] px-2 py-0.5 rounded-full text-slate-400';
+            dSpan.textContent = `📅 ${formatThaiShortDate(item.dueDate)}`;
+          }
           meta.appendChild(dSpan);
+        }
+
+        const notionHref = safeExternalUrl(item.notion_url);
+        if (notionHref) {
+          const notionLink = document.createElement('a');
+          notionLink.href = notionHref;
+          notionLink.target = '_blank';
+          notionLink.rel = 'noopener noreferrer';
+          notionLink.className = 'todo-notion-link text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 transition inline-flex items-center gap-0.5';
+          notionLink.title = 'เปิดดูใน Notion';
+          notionLink.textContent = 'Notion ↗';
+          meta.appendChild(notionLink);
         }
 
         content.appendChild(title);
@@ -788,26 +1530,42 @@
         left.appendChild(chk);
         left.appendChild(content);
 
+        const actions = document.createElement('div');
+        actions.className = 'flex items-center gap-0.5 shrink-0';
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'todo-edit-btn text-slate-400 hover:text-indigo-300 text-xs px-1.5 py-0.5 rounded transition shrink-0';
+        editBtn.title = 'แก้ไขรายการ';
+        editBtn.setAttribute('aria-label', 'แก้ไขรายการ');
+        editBtn.setAttribute('data-id', item.id);
+        editBtn.textContent = '✏️';
+        editBtn.addEventListener('click', () => openEditTodo(item.id));
+
         const delBtn = document.createElement('button');
         delBtn.type = 'button';
-        delBtn.className = 'text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded transition shrink-0';
+        delBtn.className = 'todo-delete-btn text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded transition shrink-0';
         delBtn.title = 'ลบรายการ';
+        delBtn.setAttribute('aria-label', 'ลบรายการ');
         delBtn.textContent = '✕';
         delBtn.addEventListener('click', () => {
-          todos = todos.filter(t => t.id !== item.id);
-          syncSaveTodos(todos);
+          syncDeleteTodo(item.id);
           renderTodos();
           renderWeekCalendar();
           showToast('ลบรายการ To-Do แล้ว');
         });
 
-        card.appendChild(left);
-        card.appendChild(delBtn);
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+
+        topRow.appendChild(left);
+        topRow.appendChild(actions);
+        card.appendChild(topRow);
         listEl.appendChild(card);
       });
     }
 
-    // --- Render 1-Week Google Calendar View ---
+    // --- Render 1-Week Google Calendar View (F9 XSS-Safe & F12) ---
     function getWeekStartDate(anchor, mode) {
       const d = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
       if (mode === 'monSun') {
@@ -818,36 +1576,52 @@
       return d;
     }
 
-    function renderWeekCalendar() {
-      const mode = document.getElementById('weekViewMode').value;
-      const showPrimary = document.getElementById('chkCalPrimary').checked;
-      const showCoop = document.getElementById('chkCalCoop').checked;
-
+    function getWeekDates() {
+      const modeEl = document.getElementById('weekViewMode');
+      const mode = modeEl ? modeEl.value : 'rolling7';
       const startDay = getWeekStartDate(currentAnchorDate, mode);
       const days = [];
       for (let i = 0; i < 7; i++) {
-        const d = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + i);
-        days.push(d);
+        days.push(new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + i));
       }
+      return days;
+    }
 
+    function getActiveWeekStartIso() {
+      const days = getWeekDates();
+      return toISODate(days[0]);
+    }
+
+    function renderWeekCalendar() {
+      const showPrimaryEl = document.getElementById('chkCalPrimary');
+      const showCoopEl = document.getElementById('chkCalCoop');
+      const showHolidayEl = document.getElementById('chkCalHoliday');
+      const showPrimary = showPrimaryEl ? showPrimaryEl.checked : true;
+      const showCoop = showCoopEl ? showCoopEl.checked : true;
+      const showHoliday = showHolidayEl ? showHolidayEl.checked : true;
+
+      const days = getWeekDates();
+      const startDay = days[0];
       const endDay = days[6];
       document.getElementById('weekRangeSubtitle').textContent =
         `${startDay.getDate()} ${THAI_MONTHS_SHORT[startDay.getMonth()]} ${startDay.getFullYear()} – ${endDay.getDate()} ${THAI_MONTHS_SHORT[endDay.getMonth()]} ${endDay.getFullYear()}`;
 
       const container = document.getElementById('weekDaysContainer');
-      container.innerHTML = '';
+      if (!container) return;
+      container.textContent = '';
 
       let totalWeekEvents = 0;
+      const todayIso = getTodayIso();
 
       days.forEach(d => {
         const iso = toISODate(d);
-        const todayIso = toISODate(new Date());
         const isToday = iso === todayIso;
 
         const dayEvents = calendarEvents.filter(ev => {
-          if (ev.date !== iso) return false;
+          if (!ev || ev.date !== iso) return false;
           if (ev.sourceType === 'primary' && !showPrimary) return false;
           if (ev.sourceType === 'coop' && !showCoop) return false;
+          if (ev.sourceType === 'holiday' && !showHoliday) return false;
           return true;
         });
 
@@ -874,13 +1648,22 @@
         dateBadge.textContent = d.getDate();
 
         const dayTitle = document.createElement('div');
-        dayTitle.innerHTML = `
-          <span class="text-xs sm:text-sm font-semibold ${isToday ? 'text-indigo-200' : 'text-slate-200'}">
-            ${THAI_DAYS_FULL[d.getDay()]}
-          </span>
-          <span class="text-[11px] text-slate-400 ml-1">${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}</span>
-          ${isToday ? '<span class="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500 text-white font-semibold">วันนี้</span>' : ''}
-        `;
+        const dayNameSpan = document.createElement('span');
+        dayNameSpan.className = `text-xs sm:text-sm font-semibold ${isToday ? 'text-indigo-200' : 'text-slate-200'}`;
+        dayNameSpan.textContent = THAI_DAYS_FULL[d.getDay()];
+        dayTitle.appendChild(dayNameSpan);
+
+        const dayDateSpan = document.createElement('span');
+        dayDateSpan.className = 'text-[11px] text-slate-400 ml-1';
+        dayDateSpan.textContent = `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+        dayTitle.appendChild(dayDateSpan);
+
+        if (isToday) {
+          const todayBadge = document.createElement('span');
+          todayBadge.className = 'ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-500 text-white font-semibold';
+          todayBadge.textContent = 'วันนี้';
+          dayTitle.appendChild(todayBadge);
+        }
 
         leftDate.appendChild(dateBadge);
         leftDate.appendChild(dayTitle);
@@ -923,18 +1706,25 @@
 
           const textWrap = document.createElement('div');
           textWrap.className = 'truncate';
-          textWrap.innerHTML = `
-            <span class="font-semibold mr-1.5">${ev.time}</span>
-            <span>${ev.title}</span>
-          `;
+
+          const timeSpan = document.createElement('span');
+          timeSpan.className = 'font-semibold mr-1.5';
+          timeSpan.textContent = ev.time || 'ทั้งวัน';
+
+          const titleSpan = document.createElement('span');
+          titleSpan.textContent = ev.title || '';
+
+          textWrap.appendChild(timeSpan);
+          textWrap.appendChild(titleSpan);
 
           info.appendChild(dot);
           info.appendChild(textWrap);
           evCard.appendChild(info);
 
-          if (ev.url) {
+          const eventUrl = safeExternalUrl(ev.htmlLink || ev.url);
+          if (eventUrl) {
             const link = document.createElement('a');
-            link.href = ev.url;
+            link.href = eventUrl;
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
             link.className = 'text-[10px] px-2 py-0.5 rounded bg-slate-900/70 hover:bg-slate-900 text-indigo-300 border border-slate-700 transition shrink-0';
@@ -948,7 +1738,17 @@
         dayTodos.forEach(td => {
           const tdBadge = document.createElement('div');
           tdBadge.className = 'flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[11px] text-emerald-200';
-          tdBadge.innerHTML = `<span>📌 To-Do: ${td.text}</span><span class="text-[10px] text-emerald-400">${td.category}</span>`;
+
+          const tdTextSpan = document.createElement('span');
+          tdTextSpan.className = 'truncate';
+          tdTextSpan.textContent = `📌 To-Do: ${td.text || ''}`;
+
+          const tdCatSpan = document.createElement('span');
+          tdCatSpan.className = 'text-[10px] text-emerald-400 shrink-0';
+          tdCatSpan.textContent = td.category || '';
+
+          tdBadge.appendChild(tdTextSpan);
+          tdBadge.appendChild(tdCatSpan);
           itemsBox.appendChild(tdBadge);
         });
 
@@ -964,7 +1764,7 @@
     document.getElementById('todoForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const input = document.getElementById('todoInput');
-      const dueDate = document.getElementById('todoDueDate').value || toISODate(new Date());
+      const dueDate = document.getElementById('todoDueDate').value || getTodayIso();
       const priority = document.getElementById('todoPriority').value;
       const category = document.getElementById('todoCategory').value;
       const text = input.value.trim();
@@ -977,7 +1777,8 @@
         priority,
         category,
         completed: false,
-        done: false
+        done: false,
+        notion_url: ''
       });
       input.value = '';
       syncSaveTodos(todos);
@@ -997,6 +1798,30 @@
       });
     });
 
+    const todoSearchInput = document.getElementById('todoSearchInput');
+    if (todoSearchInput) {
+      todoSearchInput.addEventListener('input', () => {
+        currentSearchQuery = todoSearchInput.value;
+        renderTodos();
+      });
+    }
+
+    const todoCategoryFilter = document.getElementById('todoCategoryFilter');
+    if (todoCategoryFilter) {
+      todoCategoryFilter.addEventListener('change', () => {
+        currentCategoryFilter = todoCategoryFilter.value;
+        renderTodos();
+      });
+    }
+
+    const todoSortSelect = document.getElementById('todoSortSelect');
+    if (todoSortSelect) {
+      todoSortSelect.addEventListener('change', () => {
+        currentSortBy = todoSortSelect.value;
+        renderTodos();
+      });
+    }
+
     document.getElementById('btnClearCompleted').addEventListener('click', () => {
       const before = todos.length;
       todos = todos.filter(t => !t.completed);
@@ -1010,38 +1835,102 @@
       }
     });
 
-    // Calendar Navigation & Filters
-    document.getElementById('weekViewMode').addEventListener('change', renderWeekCalendar);
+    // Calendar Navigation & Filters (F12)
+    document.getElementById('weekViewMode').addEventListener('change', () => {
+      renderWeekCalendar();
+      syncFetchCalendar(false, getActiveWeekStartIso());
+    });
     document.getElementById('chkCalPrimary').addEventListener('change', renderWeekCalendar);
     document.getElementById('chkCalCoop').addEventListener('change', renderWeekCalendar);
+    const chkCalHolidayEl = document.getElementById('chkCalHoliday');
+    if (chkCalHolidayEl) {
+      chkCalHolidayEl.addEventListener('change', renderWeekCalendar);
+    }
 
     document.getElementById('btnPrevWeek').addEventListener('click', () => {
       currentAnchorDate.setDate(currentAnchorDate.getDate() - 7);
       renderWeekCalendar();
+      syncFetchCalendar(false, getActiveWeekStartIso());
     });
 
     document.getElementById('btnNextWeek').addEventListener('click', () => {
       currentAnchorDate.setDate(currentAnchorDate.getDate() + 7);
       renderWeekCalendar();
+      syncFetchCalendar(false, getActiveWeekStartIso());
     });
 
     document.getElementById('btnTodayWeek').addEventListener('click', () => {
       currentAnchorDate = getSystemToday();
       renderWeekCalendar();
-      showToast(`กลับมาที่สัปดาห์ปัจจุบัน (${formatThaiShortDate(toISODate(new Date()))})`);
+      syncFetchCalendar(false, getActiveWeekStartIso());
+      showToast(`กลับมาที่สัปดาห์ปัจจุบัน (${formatThaiShortDate(getTodayIso())})`);
     });
 
     // Refresh Buttons
     function triggerRefresh() {
       const icon = document.getElementById('headerRefreshIcon');
       if (icon) icon.classList.add('inline-block', 'animate-spin');
-      syncFetchCalendar(true).finally(() => {
+      syncFetchCalendar(true, getActiveWeekStartIso()).finally(() => {
         if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 600);
       });
     }
 
     document.getElementById('btnHeaderRefresh').addEventListener('click', triggerRefresh);
     document.getElementById('btnRefreshCalendar').addEventListener('click', triggerRefresh);
+
+    // --- Structured Event Time Picker Sync (F12) ---
+    const evtAllDayEl = document.getElementById('evtAllDay');
+    const evtStartTimeEl = document.getElementById('evtStartTime');
+    const evtEndTimeEl = document.getElementById('evtEndTime');
+    const evtTimeEl = document.getElementById('evtTime');
+    const evtTimePickersWrap = document.getElementById('evtTimePickersWrap');
+
+    function syncEvtTimeFromPickers() {
+      if (!evtTimeEl) return;
+      if (evtAllDayEl && evtAllDayEl.checked) {
+        evtTimeEl.value = 'ทั้งวัน';
+        if (evtTimePickersWrap) evtTimePickersWrap.classList.add('opacity-40', 'pointer-events-none');
+        if (evtStartTimeEl) evtStartTimeEl.disabled = true;
+        if (evtEndTimeEl) evtEndTimeEl.disabled = true;
+      } else {
+        if (evtTimePickersWrap) evtTimePickersWrap.classList.remove('opacity-40', 'pointer-events-none');
+        if (evtStartTimeEl) evtStartTimeEl.disabled = false;
+        if (evtEndTimeEl) evtEndTimeEl.disabled = false;
+        const st = (evtStartTimeEl && evtStartTimeEl.value) ? evtStartTimeEl.value : '09:00';
+        const et = (evtEndTimeEl && evtEndTimeEl.value) ? evtEndTimeEl.value : '10:30';
+        evtTimeEl.value = `${st} - ${et}`;
+      }
+    }
+
+    function syncPickersFromEvtTime() {
+      if (!evtTimeEl) return;
+      const val = evtTimeEl.value.trim();
+      if (val === 'ทั้งวัน' || val.toLowerCase() === 'all day') {
+        if (evtAllDayEl) evtAllDayEl.checked = true;
+        if (evtTimePickersWrap) evtTimePickersWrap.classList.add('opacity-40', 'pointer-events-none');
+        if (evtStartTimeEl) evtStartTimeEl.disabled = true;
+        if (evtEndTimeEl) evtEndTimeEl.disabled = true;
+      } else {
+        if (evtAllDayEl) evtAllDayEl.checked = false;
+        if (evtTimePickersWrap) evtTimePickersWrap.classList.remove('opacity-40', 'pointer-events-none');
+        if (evtStartTimeEl) evtStartTimeEl.disabled = false;
+        if (evtEndTimeEl) evtEndTimeEl.disabled = false;
+        const matches = val.match(/(\d{1,2}:\d{2})/g);
+        if (matches && matches.length >= 1 && evtStartTimeEl) {
+          evtStartTimeEl.value = matches[0].padStart(5, '0');
+        }
+        if (matches && matches.length >= 2 && evtEndTimeEl) {
+          evtEndTimeEl.value = matches[1].padStart(5, '0');
+        }
+      }
+    }
+
+    if (evtAllDayEl) evtAllDayEl.addEventListener('change', syncEvtTimeFromPickers);
+    if (evtStartTimeEl) evtStartTimeEl.addEventListener('change', syncEvtTimeFromPickers);
+    if (evtEndTimeEl) evtEndTimeEl.addEventListener('change', syncEvtTimeFromPickers);
+    if (evtStartTimeEl) evtStartTimeEl.addEventListener('input', syncEvtTimeFromPickers);
+    if (evtEndTimeEl) evtEndTimeEl.addEventListener('input', syncEvtTimeFromPickers);
+    if (evtTimeEl) evtTimeEl.addEventListener('input', syncPickersFromEvtTime);
 
     // Add Event Form Toggle & Submit
     const addEventForm = document.getElementById('addEventForm');
@@ -1058,7 +1947,11 @@
       e.preventDefault();
       const title = document.getElementById('evtTitle').value.trim();
       const date = document.getElementById('evtDate').value;
-      const time = document.getElementById('evtTime').value.trim() || 'ทั้งวัน';
+      const isAllDay = evtAllDayEl && evtAllDayEl.checked;
+      const rawTimeInput = document.getElementById('evtTime').value.trim();
+      const time = isAllDay
+        ? 'ทั้งวัน'
+        : (rawTimeInput || `${evtStartTimeEl?.value || '09:00'} - ${evtEndTimeEl?.value || '10:30'}`);
       const calendarSelect = document.getElementById('evtCalendarSelect');
       const calendar = calendarSelect ? calendarSelect.value : 'pattarapon.thongsri@gmail.com';
       if (!title || !date) return;
@@ -1066,39 +1959,55 @@
       const submitBtn = document.getElementById('btnSubmitAddEvent');
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>⏳ กำลังบันทึกเข้า Google Calendar...</span>';
+        submitBtn.textContent = '⏳ กำลังบันทึกเข้า Google Calendar...';
       }
 
       try {
-        const res = await fetch(`${SYNC_API_URL}/api/calendar/events`, {
+        const res = await apiFetch('/api/calendar/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, date, time, calendar })
         });
         if (!res.ok) throw new Error('API request failed');
         const data = await res.json();
+        if (data && data.event) {
+          const createdEv = normalizeEvent(data.event);
+          calendarEvents = [...calendarEvents.filter(ev => ev.id !== createdEv.id), createdEv];
+          saveStorage('desktop_widget_events_v1', calendarEvents);
+          renderWeekCalendar();
+        }
         showToast('✅ บันทึกลง Google Calendar จริงเรียบร้อยแล้ว!');
         document.getElementById('evtTitle').value = '';
         addEventForm.classList.add('hidden');
         addEventForm.classList.remove('flex');
-        await syncFetchCalendar(false);
+        await syncFetchCalendar(false, getActiveWeekStartIso());
       } catch (err) {
-        calendarEvents.push({
+        const customEv = normalizeEvent({
           id: 'custom-' + Date.now(),
           title,
           date,
           time,
           calendar,
           sourceType: calendar.includes('coop') ? 'coop' : 'primary',
+          htmlLink: '',
           url: ''
         });
+        calendarEvents.push(customEv);
         saveStorage('desktop_widget_events_v1', calendarEvents);
         renderWeekCalendar();
+        document.getElementById('evtTitle').value = '';
+        addEventForm.classList.add('hidden');
+        addEventForm.classList.remove('flex');
+        apiFetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(calendarEvents)
+        }).catch(() => {});
         showToast('⚠️ ไม่สามารถเชื่อมต่อ Google Calendar สดได้ (บันทึกในเครื่องแทน)');
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>📅 บันทึกลง Google Calendar</span>';
+          submitBtn.textContent = '📅 บันทึกลง Google Calendar';
         }
       }
     });
@@ -1137,35 +2046,272 @@
       showToast('จัดหน้าต่างชิดมุมขวาจอเรียบร้อย');
     });
 
-    // Setup Modal Toggle
+    // --- Setup Modal, API Key Controls & Universal Modal UX (F13) ---
     const setupModal = document.getElementById('setupModal');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const apiKeyStatusText = document.getElementById('apiKeyStatusText');
+
+    function refreshApiKeyUi() {
+      const key = getStoredApiKey();
+      if (apiKeyInput) apiKeyInput.value = key;
+      if (apiKeyStatusText) {
+        if (key) {
+          apiKeyStatusText.textContent = '🟢 ตั้งค่าแล้ว';
+          apiKeyStatusText.className = 'text-[10px] text-emerald-400 font-medium';
+        } else {
+          apiKeyStatusText.textContent = 'ไม่ได้ตั้งค่า';
+          apiKeyStatusText.className = 'text-[10px] text-slate-400';
+        }
+      }
+    }
+
+    function openModal(modalEl) {
+      if (!modalEl) return;
+      modalEl.classList.remove('hidden');
+      modalEl.classList.add('flex');
+    }
+
+    function closeModal(modalEl) {
+      if (!modalEl) return;
+      modalEl.classList.add('hidden');
+      modalEl.classList.remove('flex');
+    }
+
     document.getElementById('btnOpenSetupModal').addEventListener('click', () => {
-      setupModal.classList.remove('hidden');
-      setupModal.classList.add('flex');
+      refreshApiKeyUi();
+      openModal(setupModal);
     });
     document.getElementById('btnCloseSetupModal').addEventListener('click', () => {
-      setupModal.classList.add('hidden');
-      setupModal.classList.remove('flex');
+      closeModal(setupModal);
     });
+
+    const btnSaveApiKey = document.getElementById('btnSaveApiKey');
+    if (btnSaveApiKey) {
+      btnSaveApiKey.addEventListener('click', () => {
+        const val = apiKeyInput ? apiKeyInput.value.trim() : '';
+        setStoredApiKey(val);
+        refreshApiKeyUi();
+        showToast(val ? '🔐 บันทึก API Key เรียบร้อยแล้ว' : '🔓 ล้างค่า API Key แล้ว');
+        syncFetchData();
+      });
+    }
+
+    const btnClearApiKey = document.getElementById('btnClearApiKey');
+    if (btnClearApiKey) {
+      btnClearApiKey.addEventListener('click', () => {
+        setStoredApiKey('');
+        refreshApiKeyUi();
+        showToast('🔓 ล้างค่า API Key เรียบร้อยแล้ว');
+      });
+    }
 
     // Notion Modal & Controls
     const notionModal = document.getElementById('notionModal');
     const openNotionModal = () => {
       checkNotionStatus();
-      notionModal.classList.remove('hidden');
-      notionModal.classList.add('flex');
+      openModal(notionModal);
     };
     document.getElementById('btnNotionBadge').addEventListener('click', openNotionModal);
     document.getElementById('btnCloseNotionModal').addEventListener('click', () => {
-      notionModal.classList.add('hidden');
-      notionModal.classList.remove('flex');
+      closeModal(notionModal);
     });
     document.getElementById('btnNotionAutoDetect').addEventListener('click', triggerNotionAutoConnect);
     document.getElementById('btnNotionSyncNow').addEventListener('click', () => triggerNotionSync(true));
     document.getElementById('btnNotionModalSync').addEventListener('click', () => triggerNotionSync(true));
 
+    // Backdrop click to close any modal with role="dialog" or by ID
+    ['setupModal', 'notionModal', 'editTodoModal'].forEach(id => {
+      const modalEl = document.getElementById(id);
+      if (modalEl) {
+        modalEl.addEventListener('click', (e) => {
+          if (e.target === modalEl) {
+            closeModal(modalEl);
+          }
+        });
+      }
+    });
+    document.querySelectorAll('[role="dialog"]').forEach(modalEl => {
+      modalEl.addEventListener('click', (e) => {
+        if (e.target === modalEl) {
+          closeModal(modalEl);
+        }
+      });
+    });
+
+    // Escape key to close open modals, inline todo edit, & collapsible forms
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modals = ['setupModal', 'notionModal', 'editTodoModal'].map(id => document.getElementById(id)).filter(Boolean);
+        modals.forEach(modalEl => {
+          if (!modalEl.classList.contains('hidden')) {
+            closeModal(modalEl);
+          }
+        });
+        document.querySelectorAll('[role="dialog"]').forEach(modalEl => {
+          if (!modalEl.classList.contains('hidden')) {
+            closeModal(modalEl);
+          }
+        });
+        if (editingTodoId !== null) {
+          cancelEditTodo();
+        }
+        if (addEventForm && !addEventForm.classList.contains('hidden')) {
+          addEventForm.classList.add('hidden');
+          addEventForm.classList.remove('flex');
+        }
+      }
+    });
+
+    // --- Browser & In-App Notification Reminders (F13) ---
+    const NOTIFY_PREF_KEY = 'desktop_widget_notify_enabled';
+    const NOTIFIED_IDS_KEY = 'desktop_widget_notified_ids_v1';
+    let notificationsEnabled = loadStorage(NOTIFY_PREF_KEY, true);
+
+    function loadNotifiedSet() {
+      try {
+        const raw = sessionStorage.getItem(NOTIFIED_IDS_KEY) || localStorage.getItem(NOTIFIED_IDS_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(arr) ? arr : []);
+      } catch (e) {
+        return new Set();
+      }
+    }
+
+    function saveNotifiedSet(setObj) {
+      try {
+        const arr = Array.from(setObj).slice(-200);
+        const serialized = JSON.stringify(arr);
+        sessionStorage.setItem(NOTIFIED_IDS_KEY, serialized);
+        localStorage.setItem(NOTIFIED_IDS_KEY, serialized);
+      } catch (e) {}
+    }
+
+    function updateNotifyButtonUi() {
+      const btn = document.getElementById('btnToggleNotify');
+      const icon = document.getElementById('notifyIcon');
+      const label = document.getElementById('notifyLabel');
+      if (!btn || !icon || !label) return;
+
+      if (notificationsEnabled) {
+        btn.className = 'p-1.5 px-2 text-xs rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 transition flex items-center gap-1';
+        icon.textContent = '🔔';
+        label.textContent = 'แจ้งเตือน: เปิด';
+      } else {
+        btn.className = 'p-1.5 px-2 text-xs rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 border border-slate-700/80 transition flex items-center gap-1';
+        icon.textContent = '🔕';
+        label.textContent = 'ปิดแจ้งเตือน';
+      }
+    }
+
+    function showReminderAlert(title, body, tagKey) {
+      const container = document.getElementById('toastContainer');
+      if (container) {
+        const card = document.createElement('div');
+        card.className = 'pointer-events-auto bg-slate-900/95 border border-amber-500/60 text-slate-100 text-xs px-3.5 py-2.5 rounded-xl shadow-2xl flex items-start justify-between gap-2 transition-all';
+        const textCol = document.createElement('div');
+        textCol.className = 'flex flex-col gap-0.5';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'font-bold text-amber-300';
+        titleEl.textContent = title;
+        const bodyEl = document.createElement('div');
+        bodyEl.className = 'text-[11px] text-slate-200';
+        bodyEl.textContent = body;
+        textCol.appendChild(titleEl);
+        textCol.appendChild(bodyEl);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'text-slate-400 hover:text-white text-xs px-1';
+        closeBtn.textContent = '✕';
+        closeBtn.addEventListener('click', () => card.remove());
+
+        card.appendChild(textCol);
+        card.appendChild(closeBtn);
+        container.appendChild(card);
+
+        setTimeout(() => {
+          card.style.opacity = '0';
+          setTimeout(() => card.remove(), 300);
+        }, 6500);
+      }
+
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(title, { body, tag: tagKey });
+        } catch (e) {}
+      }
+    }
+
+    function checkReminders() {
+      if (!notificationsEnabled) return;
+      const now = new Date();
+      const todayIso = toISODate(now);
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const notifiedSet = loadNotifiedSet();
+      let updated = false;
+
+      // 1. Check upcoming calendar events starting within 0-15 minutes today
+      calendarEvents.forEach(ev => {
+        if (!ev || ev.date !== todayIso || !ev.time || ev.time === 'ทั้งวัน') return;
+        const match = String(ev.time).match(/(\d{1,2}):(\d{2})/);
+        if (!match) return;
+        const evHour = parseInt(match[1], 10);
+        const evMin = parseInt(match[2], 10);
+        const evTotalMinutes = evHour * 60 + evMin;
+        const diff = evTotalMinutes - nowMinutes;
+
+        if (diff >= 0 && diff <= 15) {
+          const key = todayIso + ':event:' + (ev.id || ev.title || '');
+          if (!notifiedSet.has(key)) {
+            notifiedSet.add(key);
+            updated = true;
+            const timeLabel = diff === 0 ? 'เริ่มตอนนี้' : ('อีก ' + diff + ' นาที (' + (ev.time || '') + ')');
+            showReminderAlert('⏰ นัดหมายกำลังจะเริ่ม', (ev.title || '') + ' — ' + timeLabel, key);
+          }
+        }
+      });
+
+      // 2. Check uncompleted tasks due today
+      const dueTodayTasks = todos.filter(t => t && !t.completed && !t.done && t.dueDate === todayIso);
+      dueTodayTasks.forEach(t => {
+        const key = `${todayIso}:todo:${t.id}`;
+        if (!notifiedSet.has(key)) {
+          notifiedSet.add(key);
+          updated = true;
+          showReminderAlert('📌 งานครบกำหนดวันนี้', `${t.text} (${t.category || 'งานประจำ'})`, key);
+        }
+      });
+
+      if (updated) {
+        saveNotifiedSet(notifiedSet);
+      }
+    }
+
+    const btnToggleNotify = document.getElementById('btnToggleNotify');
+    if (btnToggleNotify) {
+      btnToggleNotify.addEventListener('click', async () => {
+        notificationsEnabled = !notificationsEnabled;
+        saveStorage(NOTIFY_PREF_KEY, notificationsEnabled);
+        updateNotifyButtonUi();
+
+        if (notificationsEnabled) {
+          if ('Notification' in window && Notification.permission === 'default') {
+            try {
+              await Notification.requestPermission();
+            } catch (e) {}
+          }
+          showToast('🔔 เปิดการแจ้งเตือนนัดหมายและงานวันนี้แล้ว');
+          checkReminders();
+        } else {
+          showToast('🔕 ปิดการแจ้งเตือนแล้ว');
+        }
+      });
+    }
+    updateNotifyButtonUi();
+    refreshApiKeyUi();
+
     // Initial Startup & Auto Dates
-    const todayStr = toISODate(new Date());
+    const todayStr = getTodayIso();
     const todoDueInput = document.getElementById('todoDueDate');
     if (todoDueInput) todoDueInput.value = todayStr;
     const evtDateInput = document.getElementById('evtDate');
@@ -1177,14 +2323,25 @@
     renderWeekCalendar();
 
     // Start Background Data Sync
-    syncFetchData();
-    syncFetchCalendar(false);
-    checkNotionStatus();
+    if (typeof window === 'undefined' || !window.__test_helpers) {
+      syncFetchData();
+      syncFetchCalendar(false);
+      checkNotionStatus();
+      setTimeout(checkReminders, 1500);
+    }
 
     // Intervals
     setInterval(syncFetchData, 2000);
     setInterval(checkNotionStatus, 15000);
     setInterval(() => syncFetchCalendar(false), 300000);
+    setInterval(checkReminders, 60000);
+
+    // --- PWA Service Worker Registration (F13) ---
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>

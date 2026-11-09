@@ -17,9 +17,9 @@ if %errorlevel% equ 0 (
 
 where python >nul 2>&1
 if %errorlevel% equ 0 (
-    start "" python "%~dp0desktop_widget_always_on_top.py"
+    start "" /min python "%~dp0desktop_widget_always_on_top.py"
     exit
 )
 
-echo [แจ้งเตือน] ไม่พบ Python ในเครื่อง
+echo [แจ้งเตือน] ไม่พบ Python ในเครื่อง กรุณาติดตั้ง Python 3.x ก่อนใช้งานโหมด Native Widget หรือเปิดผ่าน Open_Widget_Right_Corner.bat
 pause

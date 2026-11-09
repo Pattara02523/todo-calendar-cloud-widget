@@ -1,0 +1,24 @@
+# Git & VCS
+.git
+.gitignore
+
+# Python bytecode & test caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# Agent / Teamwork & Test directories
+.agents/
+tests/
+
+# Local environment overrides & debug logs
+.env
+debug_*.txt
+*.log
+
+# NOTE: Do NOT ignore runtime files or default credentials ("เอาspokenต่างๆไว้เลย"):
+# Kept in build context:
+# - *.py, desktop_todo_calendar_widget.html, manifest.json, sw.js
+# - notion_config.json, .calendar_auth/*, desktop_todo_data.json
